@@ -81,7 +81,7 @@ export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input,
                 <div className="w-full md:w-auto text-right md:min-w-[180px] bg-slate-800/50 rounded-lg p-2 border border-white/10">
                     <span className="text-slate-400 text-xs sm:text-sm">Você receberá ≈</span>
                     <p className="text-lg sm:text-xl font-semibold text-green-400">
-                        {result ? result.finalBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00'}
+                        {result ? result.netBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00'}
                     </p>
                 </div>
             </div>

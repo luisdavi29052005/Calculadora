@@ -23,7 +23,10 @@ export interface CalculationInput {
 }
 
 export interface CalculationResult {
-    finalBRL: number;
+    netBRL: number;
+    grossBRL: number;
+    netUSD: number;
+    grossUSD: number;
     exchangeRate: number;
     rateWithSpread: number;
     paypalFeeForeign: number;

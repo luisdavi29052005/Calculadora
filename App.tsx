@@ -31,7 +31,6 @@ const App: React.FC = () => {
             const uniqueCurrencies = [...new Set<string>([...inputCurrencies, 'USD'])]; // Always fetch USD rate
             const fetchedRates = await getExchangeRates(uniqueCurrencies);
             setRates(prevRates => ({ ...prevRates, ...fetchedRates }));
-        // FIX: Add curly braces to the catch block to correctly handle errors.
         } catch (err) {
             setError('Falha ao buscar taxas de câmbio. Por favor, tente novamente mais tarde.');
             console.error(err);
@@ -46,21 +45,29 @@ const App: React.FC = () => {
 
     useEffect(() => {
         const newResults: Record<number, CalculationResult | null> = {};
+        const usdRate = rates['USD'];
         let allRatesAvailable = true;
 
-        for (const input of inputs) {
-            const rate = rates[input.currency];
-            if (rate === undefined) {
-                allRatesAvailable = false;
+        if (usdRate === undefined) {
+             allRatesAvailable = false;
+             for (const input of inputs) {
                 newResults[input.id] = null;
-                continue;
+             }
+        } else {
+            for (const input of inputs) {
+                const rate = rates[input.currency];
+                if (rate === undefined) {
+                    allRatesAvailable = false;
+                    newResults[input.id] = null;
+                    continue;
+                }
+                const amount = parseFloat(input.amount);
+                if (isNaN(amount) || amount <= 0) {
+                    newResults[input.id] = null;
+                    continue;
+                }
+                newResults[input.id] = calculatePayPalConversion(amount, input.currency, rate, usdRate);
             }
-            const amount = parseFloat(input.amount);
-            if (isNaN(amount) || amount <= 0) {
-                newResults[input.id] = null;
-                continue;
-            }
-            newResults[input.id] = calculatePayPalConversion(amount, input.currency, rate);
         }
 
         setResults(newResults);
@@ -99,11 +106,14 @@ const App: React.FC = () => {
     };
 
     const validResults = Object.values(results).filter((r): r is CalculationResult => r !== null);
-    const totalBRL = validResults.reduce((sum, result) => sum + result.finalBRL, 0);
-    const totalFeesAndSpread = validResults.reduce((sum, result) => sum + result.totalLossBRL, 0);
+    
+    const totalNetBRL = validResults.reduce((sum, result) => sum + result.netBRL, 0);
+    const totalGrossBRL = validResults.reduce((sum, result) => sum + result.grossBRL, 0);
 
-    const usdRate = rates['USD'];
-    const totalUSD = usdRate && totalBRL > 0 ? totalBRL / usdRate : 0;
+    const totalNetUSD = validResults.reduce((sum, result) => sum + result.netUSD, 0);
+    const totalGrossUSD = validResults.reduce((sum, result) => sum + result.grossUSD, 0);
+
+    const totalFeesAndSpread = validResults.reduce((sum, result) => sum + result.totalLossBRL, 0);
 
     return (
         <div className="min-h-screen bg-transparent text-white flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 selection:bg-cyan-300 selection:text-slate-900">
@@ -149,8 +159,10 @@ const App: React.FC = () => {
                         </div>
                        
                         <TotalResultCard 
-                            totalBRL={totalBRL} 
-                            totalUSD={totalUSD}
+                            totalNetBRL={totalNetBRL}
+                            totalGrossBRL={totalGrossBRL}
+                            totalNetUSD={totalNetUSD}
+                            totalGrossUSD={totalGrossUSD}
                             totalFeesAndSpread={totalFeesAndSpread}
                             results={results} 
                             inputs={inputs} 

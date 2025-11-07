@@ -5,7 +5,8 @@ import type { CalculationResult } from '../types';
 export function calculatePayPalConversion(
     value: number,
     currency: string,
-    exchangeRate: number
+    exchangeRate: number,
+    usdRate: number
 ): CalculationResult {
     const fees = PAYPAL_FEES[currency] || DEFAULT_FEES;
     const fee_percent = fees.fee_percent / 100;
@@ -15,13 +16,19 @@ export function calculatePayPalConversion(
     const rateWithSpread = exchangeRate * (1 - spread_percent);
     const paypalFeeForeign = (value * fee_percent) + fixed_fee;
     const netAfterFees = Math.max(0, value - paypalFeeForeign);
-    const finalBRL = netAfterFees * rateWithSpread;
+    const netBRL = netAfterFees * rateWithSpread;
     
-    const valueAtRawRateBRL = value * exchangeRate;
-    const totalLossBRL = valueAtRawRateBRL - finalBRL;
+    const grossBRL = value * exchangeRate;
+    const totalLossBRL = grossBRL - netBRL;
+
+    const grossUSD = grossBRL / usdRate;
+    const netUSD = netBRL / usdRate;
 
     return {
-        finalBRL,
+        netBRL,
+        grossBRL,
+        netUSD,
+        grossUSD,
         exchangeRate,
         rateWithSpread,
         paypalFeeForeign,
