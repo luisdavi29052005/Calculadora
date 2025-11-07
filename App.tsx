@@ -27,11 +27,13 @@ const App: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const uniqueCurrencies = [...new Set<string>(inputs.map(input => input.currency))];
+            const inputCurrencies = inputs.map(input => input.currency);
+            const uniqueCurrencies = [...new Set<string>([...inputCurrencies, 'USD'])]; // Always fetch USD rate
             const fetchedRates = await getExchangeRates(uniqueCurrencies);
             setRates(prevRates => ({ ...prevRates, ...fetchedRates }));
+        // FIX: Add curly braces to the catch block to correctly handle errors.
         } catch (err) {
-            setError('Failed to fetch exchange rates. Please try again later.');
+            setError('Falha ao buscar taxas de câmbio. Por favor, tente novamente mais tarde.');
             console.error(err);
         } finally {
             setIsLoading(false);
@@ -96,64 +98,69 @@ const App: React.FC = () => {
         setInputs(prevInputs => prevInputs.filter(input => input.id !== idToRemove));
     };
 
-    const totalBRL = (Object.values(results) as (CalculationResult | null)[]).reduce((sum, result) => sum + (result?.finalBRL ?? 0), 0);
+    const validResults = Object.values(results).filter((r): r is CalculationResult => r !== null);
+    const totalBRL = validResults.reduce((sum, result) => sum + result.finalBRL, 0);
+    const totalFeesAndSpread = validResults.reduce((sum, result) => sum + result.totalLossBRL, 0);
+
+    const usdRate = rates['USD'];
+    const totalUSD = usdRate && totalBRL > 0 ? totalBRL / usdRate : 0;
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4 selection:bg-indigo-500 selection:text-white">
+        <div className="min-h-screen bg-transparent text-white flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 selection:bg-cyan-300 selection:text-slate-900">
             <div className="w-full max-w-5xl mx-auto">
-                <header className="text-center mb-8 md:mb-12">
-                    <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-500">
-                        Dynamic PayPal Calculator
+                <header className="text-center mb-10 md:mb-12">
+                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-br from-white to-slate-400 pb-2">
+                        Calculadora PayPal Premium
                     </h1>
-                    <p className="text-gray-400 mt-2 text-lg">Calculate multiple payments and see your total earnings in BRL.</p>
+                    <p className="text-slate-400 mt-4 text-lg md:text-xl max-w-3xl mx-auto">
+                        Calcule múltiplos pagamentos internacionais e veja seus ganhos totais em BRL após todas as taxas.
+                    </p>
                 </header>
 
                 <main>
-                    {error && <div className="text-center text-red-400 bg-red-900/50 p-4 rounded-lg mb-8">{error}</div>}
+                    {error && <div className="text-center text-red-400 bg-red-900/50 p-4 rounded-lg mb-8 max-w-3xl mx-auto">{error}</div>}
                     
-                    <div className="flex flex-wrap items-start justify-center gap-x-8 gap-y-12 mb-8">
-                       {inputs.map((input, index) => (
-                           <React.Fragment key={input.id}>
-                                <CurrencyInputCard
-                                    id={input.id}
-                                    input={input}
-                                    onInputChange={handleInputChange}
-                                    onRemove={removeInputCard}
-                                    canBeRemoved={inputs.length > 1}
-                                    result={results[input.id]}
-                                    currencies={CURRENCIES}
-                                />
-                                {index < inputs.length - 1 && (
-                                     <div className="text-gray-600 self-center hidden lg:block">
-                                        <PlusIcon />
-                                    </div>
-                                )}
-                           </React.Fragment>
-                       ))}
-                    </div>
-
-                    <div className="flex justify-center mb-8">
-                        <button 
-                            onClick={addInputCard}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75"
-                        >
-                            Add Another Payment
-                        </button>
-                    </div>
-
-                    <div className="relative">
+                    <div className="relative w-full max-w-4xl mx-auto bg-slate-900/50 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl">
                         {isLoading && inputs.length > 0 && <LoadingSpinner />}
+
+                        <div className="space-y-4 mb-6">
+                           {inputs.map((input) => (
+                               <CurrencyInputCard
+                                   key={input.id}
+                                   id={input.id}
+                                   input={input}
+                                   onInputChange={handleInputChange}
+                                   onRemove={removeInputCard}
+                                   canBeRemoved={inputs.length > 1}
+                                   result={results[input.id]}
+                                   currencies={CURRENCIES}
+                               />
+                           ))}
+                        </div>
+
+                        <div className="flex justify-start mb-6">
+                            <button 
+                                onClick={addInputCard}
+                                className="flex items-center gap-2 bg-slate-800/50 border border-white/20 text-white font-semibold py-2 px-5 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-slate-700/50 hover:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-75 shadow-lg shadow-black/20"
+                            >
+                                <PlusIcon />
+                                <span>Adicionar Pagamento</span>
+                            </button>
+                        </div>
+                       
                         <TotalResultCard 
                             totalBRL={totalBRL} 
+                            totalUSD={totalUSD}
+                            totalFeesAndSpread={totalFeesAndSpread}
                             results={results} 
                             inputs={inputs} 
                         />
                     </div>
                 </main>
 
-                <footer className="text-center mt-12 text-gray-500 text-sm">
+                <footer className="text-center mt-16 text-slate-500 text-xs">
                     <p>
-                        Calculations are based on PayPal Brazil's merchant fees document updated July 16, 2025. Exchange rates are fetched from a live API for estimation purposes.
+                        Os cálculos são baseados no documento de taxas para vendedores do PayPal Brasil atualizado em 16 de julho de 2025. As taxas de câmbio são buscadas de uma API em tempo real para fins de estimativa.
                     </p>
                 </footer>
             </div>

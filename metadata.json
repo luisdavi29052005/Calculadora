@@ -1,5 +1,5 @@
 {
-  "name": "Dual Currency PayPal Calculator",
-  "description": "A modern, professional web application to calculate and compare two different currency amounts converted to Brazilian Real (BRL) after PayPal fees. It provides a clear breakdown of fees and the final total amount.",
+  "name": "Calculadora PayPal Premium",
+  "description": "Uma aplicação web moderna e profissional para calcular e comparar múltiplos pagamentos em moedas diferentes convertidos para Real Brasileiro (BRL) após as taxas do PayPal. Fornece um detalhamento claro das taxas e o valor final total.",
   "requestFramePermissions": []
 }

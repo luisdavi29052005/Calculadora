@@ -2,7 +2,7 @@
 export interface CurrencyInfo {
     code: string;
     name: string;
-    flag: string;
+    countryCode: string;
     symbol: string;
 }
 

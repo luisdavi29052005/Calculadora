@@ -17,7 +17,6 @@ export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input,
     
     const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
-        // Allow only numbers and a single decimal point
         if (/^\d*\.?\d*$/.test(value)) {
             onInputChange(id, 'amount', value);
         }
@@ -26,56 +25,65 @@ export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input,
     const selectedCurrencyInfo = currencies.find(c => c.code === input.currency);
 
     return (
-        <div className="relative w-full max-w-md bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 shadow-lg transform hover:scale-[1.02] transition-transform duration-300">
-            {canBeRemoved && (
+        <div className="relative group w-full bg-black/25 p-3 sm:p-4 rounded-xl border border-transparent hover:border-white/10 transition-colors duration-300">
+             {canBeRemoved && (
                  <button 
                      onClick={() => onRemove(id)}
-                     className="absolute -top-3 -right-3 bg-gray-700 hover:bg-red-600 text-white rounded-full p-1.5 z-10 transition-colors duration-200"
-                     aria-label="Remove payment"
+                     className="absolute -top-3 -right-3 bg-slate-700 hover:bg-red-500 text-white rounded-full p-1.5 z-10 transition-all duration-200 opacity-50 group-hover:opacity-100"
+                     aria-label="Remover pagamento"
                  >
                      <CloseIcon />
                  </button>
             )}
-            <div className="flex justify-between items-center mb-4">
-                <label htmlFor={`currency-${id}`} className="text-gray-400">Payment Currency</label>
-                <div className="relative">
+            <div className="flex flex-wrap md:flex-nowrap items-center gap-4">
+                
+                <div className="relative w-full md:w-auto">
+                    <label htmlFor={`currency-${id}`} className="sr-only">Moeda</label>
                     <select
                         id={`currency-${id}`}
                         value={input.currency}
                         onChange={(e) => onInputChange(id, 'currency', e.target.value)}
-                        className="bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                        className="w-full bg-slate-800/50 border border-white/10 rounded-lg pl-11 pr-4 py-2 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:bg-slate-800 transition-all text-base"
                     >
                         {currencies.map(c => (
                             <option key={c.code} value={c.code}>
-                                {c.code} - {c.name}
+                                {c.code}
                             </option>
                         ))}
                     </select>
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xl pointer-events-none">
-                        {selectedCurrencyInfo?.flag}
-                    </span>
+                    {selectedCurrencyInfo && (
+                         <img 
+                            src={`https://flagcdn.com/${selectedCurrencyInfo.countryCode}.svg`} 
+                            alt={`Bandeira ${selectedCurrencyInfo.name}`}
+                            className="w-6 h-auto absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none select-none rounded-sm"
+                         />
+                    )}
                 </div>
-            </div>
 
-            <div className="relative mb-4">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-3xl text-gray-500 font-semibold">
-                    {selectedCurrencyInfo?.symbol}
-                </span>
-                <input
-                    type="text"
-                    id={`amount-${id}`}
-                    value={input.amount}
-                    onChange={handleAmountChange}
-                    placeholder="0.00"
-                    className="w-full bg-gray-900/50 border-2 border-gray-700 rounded-lg p-4 pl-12 text-4xl font-bold text-white text-right focus:outline-none focus:border-indigo-500 transition"
-                />
-            </div>
-            
-            <div className="bg-gray-900/70 rounded-lg p-4 text-center min-h-[72px] flex items-center justify-center">
-                <span className="text-gray-400 mr-2">You'll receive ≈</span>
-                <span className="text-2xl font-semibold text-green-400">
-                    {result ? result.finalBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00'}
-                </span>
+                <div className="relative flex-grow">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-slate-500 font-semibold pointer-events-none">
+                        {selectedCurrencyInfo?.symbol}
+                    </span>
+                    <label htmlFor={`amount-${id}`} className="sr-only">Valor</label>
+                    <input
+                        type="text"
+                        id={`amount-${id}`}
+                        value={input.amount}
+                        onChange={handleAmountChange}
+                        placeholder="0,00"
+                        className="w-full bg-slate-800/50 border border-white/10 focus:border-cyan-400 focus:ring-0 rounded-lg p-3 pl-11 text-2xl font-bold text-white text-right transition-colors"
+                        aria-label="Valor"
+                    />
+                </div>
+                
+                <div className="hidden xl:block w-px h-10 bg-slate-700"></div>
+
+                <div className="w-full md:w-auto text-right md:min-w-[180px] bg-slate-800/50 rounded-lg p-2 border border-white/10">
+                    <span className="text-slate-400 text-xs sm:text-sm">Você receberá ≈</span>
+                    <p className="text-lg sm:text-xl font-semibold text-green-400">
+                        {result ? result.finalBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00'}
+                    </p>
+                </div>
             </div>
         </div>
     );
