@@ -10,10 +10,9 @@ import { getExchangeRates } from './services/exchangeRateService';
 import { calculatePayPalConversion } from './utils/calculator';
 
 const App: React.FC = () => {
-    const [inputs, setInputs] = useState<CalculationInput[]>([
-        { id: Date.now(), amount: '1000', currency: 'USD' },
-    ]);
+    const createDefaultInput = () => ({ id: Date.now(), amount: '1000', currency: 'USD' });
 
+    const [inputs, setInputs] = useState<CalculationInput[]>([createDefaultInput()]);
     const [results, setResults] = useState<Record<number, CalculationResult | null>>({});
     const [rates, setRates] = useState<Record<string, number>>({});
     const [isLoading, setIsLoading] = useState(true);
@@ -28,11 +27,11 @@ const App: React.FC = () => {
         setError(null);
         try {
             const inputCurrencies = inputs.map(input => input.currency);
-            const uniqueCurrencies = [...new Set<string>([...inputCurrencies, 'USD'])]; // Always fetch USD rate
+            const uniqueCurrencies = [...new Set<string>([...inputCurrencies, 'USD'])]; 
             const fetchedRates = await getExchangeRates(uniqueCurrencies);
             setRates(prevRates => ({ ...prevRates, ...fetchedRates }));
         } catch (err) {
-            setError('Falha ao buscar taxas de câmbio. Por favor, tente novamente mais tarde.');
+            setError('Falha ao buscar taxas de câmbio. Verifique sua conexão e tente novamente.');
             console.error(err);
         } finally {
             setIsLoading(false);
@@ -50,9 +49,7 @@ const App: React.FC = () => {
 
         if (usdRate === undefined) {
              allRatesAvailable = false;
-             for (const input of inputs) {
-                newResults[input.id] = null;
-             }
+             for (const input of inputs) newResults[input.id] = null;
         } else {
             for (const input of inputs) {
                 const rate = rates[input.currency];
@@ -71,7 +68,7 @@ const App: React.FC = () => {
         }
 
         setResults(newResults);
-        if(!allRatesAvailable && !isLoading) {
+        if(!allRatesAvailable && !isLoading && inputs.length > 0) {
              fetchRates();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -92,8 +89,10 @@ const App: React.FC = () => {
         let newCurrency = 'EUR';
         if (existingCurrencies.has('EUR') && !existingCurrencies.has('GBP')) {
           newCurrency = 'GBP';
-        } else if (existingCurrencies.has('EUR') && existingCurrencies.has('GBP')) {
+        } else if (existingCurrencies.has('EUR') && existingCurrencies.has('GBP') && !existingCurrencies.has('CAD')) {
           newCurrency = 'CAD';
+        } else if (existingCurrencies.has('EUR') && existingCurrencies.has('GBP') && existingCurrencies.has('CAD')) {
+          newCurrency = 'AUD';
         }
 
         const newCard: CalculationInput = { id: newId, amount: '1000', currency: newCurrency };
@@ -101,24 +100,38 @@ const App: React.FC = () => {
     };
 
     const removeInputCard = (idToRemove: number) => {
-        if (inputs.length <= 1) return; // Prevent removing the last card
+        if (inputs.length <= 1) return;
         setInputs(prevInputs => prevInputs.filter(input => input.id !== idToRemove));
+    };
+    
+    const duplicateInputCard = (idToDuplicate: number) => {
+        const cardToDuplicate = inputs.find(input => input.id === idToDuplicate);
+        if (cardToDuplicate) {
+            const newCard: CalculationInput = { ...cardToDuplicate, id: Date.now() };
+            setInputs(prevInputs => [...prevInputs, newCard]);
+        }
+    };
+
+    const clearAllInputs = () => {
+        setInputs([createDefaultInput()]);
+        setResults({});
     };
 
     const validResults = Object.values(results).filter((r): r is CalculationResult => r !== null);
     
     const totalNetBRL = validResults.reduce((sum, result) => sum + result.netBRL, 0);
     const totalGrossBRL = validResults.reduce((sum, result) => sum + result.grossBRL, 0);
-
     const totalNetUSD = validResults.reduce((sum, result) => sum + result.netUSD, 0);
     const totalGrossUSD = validResults.reduce((sum, result) => sum + result.grossUSD, 0);
-
     const totalFeesAndSpread = validResults.reduce((sum, result) => sum + result.totalLossBRL, 0);
+    const totalFeeLoss = validResults.reduce((sum, result) => sum + result.feeLossBRL, 0);
+    const totalSpreadLoss = validResults.reduce((sum, result) => sum + result.spreadLossBRL, 0);
+
 
     return (
-        <div className="min-h-screen bg-transparent text-white flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 selection:bg-cyan-300 selection:text-slate-900">
-            <div className="w-full max-w-5xl mx-auto">
-                <header className="text-center mb-10 md:mb-12">
+        <div className="min-h-screen bg-transparent text-white flex flex-col p-4 sm:p-6 lg:p-8 selection:bg-cyan-300 selection:text-slate-900">
+            <div className="w-full max-w-7xl mx-auto">
+                <header className="text-center mb-8 sm:mb-10 md:mb-12">
                     <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-br from-white to-slate-400 pb-2">
                         Calculadora PayPal Premium
                     </h1>
@@ -130,49 +143,67 @@ const App: React.FC = () => {
                 <main>
                     {error && <div className="text-center text-red-400 bg-red-900/50 p-4 rounded-lg mb-8 max-w-3xl mx-auto">{error}</div>}
                     
-                    <div className="relative w-full max-w-4xl mx-auto bg-slate-900/50 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl">
-                        {isLoading && inputs.length > 0 && <LoadingSpinner />}
-
-                        <div className="space-y-4 mb-6">
-                           {inputs.map((input) => (
-                               <CurrencyInputCard
-                                   key={input.id}
-                                   id={input.id}
-                                   input={input}
-                                   onInputChange={handleInputChange}
-                                   onRemove={removeInputCard}
-                                   canBeRemoved={inputs.length > 1}
-                                   result={results[input.id]}
-                                   currencies={CURRENCIES}
-                               />
-                           ))}
+                     <div className="relative grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+                        
+                        {/* Coluna de Inputs */}
+                        <div className="lg:col-span-2 lg:sticky lg:top-8 space-y-6">
+                            <div className="flex justify-between items-center">
+                                <h2 className="text-2xl font-bold text-slate-200 tracking-tight">Pagamentos</h2>
+                                {isLoading && <LoadingSpinner />}
+                            </div>
+                            <div className="space-y-4">
+                               {inputs.map((input) => (
+                                   <CurrencyInputCard
+                                       key={input.id}
+                                       id={input.id}
+                                       input={input}
+                                       onInputChange={handleInputChange}
+                                       onRemove={removeInputCard}
+                                       onDuplicate={duplicateInputCard}
+                                       canBeRemoved={inputs.length > 1}
+                                       currencies={CURRENCIES}
+                                   />
+                               ))}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-4">
+                                <button 
+                                    onClick={addInputCard}
+                                    className="flex items-center gap-2 bg-slate-800 border border-slate-700 text-white font-semibold py-2 px-5 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-slate-700 hover:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-75 shadow-lg shadow-black/20"
+                                >
+                                    <PlusIcon />
+                                    <span>Adicionar</span>
+                                </button>
+                                {inputs.length > 1 && (
+                                    <button 
+                                        onClick={clearAllInputs}
+                                        className="text-slate-400 hover:text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                                    >
+                                        Limpar Tudo
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
-                        <div className="flex justify-start mb-6">
-                            <button 
-                                onClick={addInputCard}
-                                className="flex items-center gap-2 bg-slate-800/50 border border-white/20 text-white font-semibold py-2 px-5 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-slate-700/50 hover:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-75 shadow-lg shadow-black/20"
-                            >
-                                <PlusIcon />
-                                <span>Adicionar Pagamento</span>
-                            </button>
+                        {/* Coluna de Resultados */}
+                        <div className="lg:col-span-3">
+                            <TotalResultCard 
+                                totalNetBRL={totalNetBRL}
+                                totalGrossBRL={totalGrossBRL}
+                                totalNetUSD={totalNetUSD}
+                                totalGrossUSD={totalGrossUSD}
+                                totalFeesAndSpread={totalFeesAndSpread}
+                                totalFeeLoss={totalFeeLoss}
+                                totalSpreadLoss={totalSpreadLoss}
+                                results={results} 
+                                inputs={inputs} 
+                            />
                         </div>
-                       
-                        <TotalResultCard 
-                            totalNetBRL={totalNetBRL}
-                            totalGrossBRL={totalGrossBRL}
-                            totalNetUSD={totalNetUSD}
-                            totalGrossUSD={totalGrossUSD}
-                            totalFeesAndSpread={totalFeesAndSpread}
-                            results={results} 
-                            inputs={inputs} 
-                        />
                     </div>
                 </main>
 
-                <footer className="text-center mt-16 text-slate-500 text-xs">
+                <footer className="text-center mt-12 md:mt-16 text-slate-500 text-sm">
                     <p>
-                        Os cálculos são baseados no documento de taxas para vendedores do PayPal Brasil atualizado em 16 de julho de 2025. As taxas de câmbio são buscadas de uma API em tempo real para fins de estimativa.
+                        Cálculos baseados nas taxas do PayPal Brasil (Julho 2025). Câmbio de uma API em tempo real. Use como estimativa.
                     </p>
                 </footer>
             </div>

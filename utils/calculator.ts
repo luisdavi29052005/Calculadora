@@ -24,6 +24,9 @@ export function calculatePayPalConversion(
     const grossUSD = grossBRL / usdRate;
     const netUSD = netBRL / usdRate;
 
+    const feeLossBRL = paypalFeeForeign * rateWithSpread;
+    const spreadLossBRL = grossBRL * spread_percent;
+
     return {
         netBRL,
         grossBRL,
@@ -34,5 +37,7 @@ export function calculatePayPalConversion(
         paypalFeeForeign,
         baseValue: value,
         totalLossBRL,
+        spreadLossBRL,
+        feeLossBRL,
     };
 }

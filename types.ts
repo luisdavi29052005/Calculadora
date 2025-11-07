@@ -32,4 +32,6 @@ export interface CalculationResult {
     paypalFeeForeign: number;
     baseValue: number;
     totalLossBRL: number;
+    spreadLossBRL: number;
+    feeLossBRL: number;
 }
