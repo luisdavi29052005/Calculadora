@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { CurrencyInputCard } from './components/CurrencyInputCard';
 import { TotalResultCard } from './components/TotalResultCard';
@@ -146,12 +145,12 @@ const App: React.FC = () => {
                      <div className="relative grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
                         
                         {/* Coluna de Inputs */}
-                        <div className="lg:col-span-2 lg:sticky lg:top-8 space-y-6">
-                            <div className="flex justify-between items-center">
+                        <div className="lg:col-span-2 flex flex-col gap-4">
+                            <div className="flex justify-between items-center flex-shrink-0">
                                 <h2 className="text-2xl font-bold text-slate-200 tracking-tight">Pagamentos</h2>
                                 {isLoading && <LoadingSpinner />}
                             </div>
-                            <div className="space-y-4">
+                            <div className="space-y-4 pr-2">
                                {inputs.map((input) => (
                                    <CurrencyInputCard
                                        key={input.id}
@@ -165,7 +164,7 @@ const App: React.FC = () => {
                                    />
                                ))}
                             </div>
-                            <div className="flex flex-wrap items-center gap-4">
+                            <div className="flex flex-wrap items-center gap-4 flex-shrink-0">
                                 <button 
                                     onClick={addInputCard}
                                     className="flex items-center gap-2 bg-slate-800 border border-slate-700 text-white font-semibold py-2 px-5 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-slate-700 hover:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-75 shadow-lg shadow-black/20"

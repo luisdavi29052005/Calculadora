@@ -1,4 +1,3 @@
-
 import React from 'react';
 import type { CalculationInput, CalculationResult } from '../types';
 
@@ -12,8 +11,20 @@ const PieChart: React.FC<{ feePercent: number, spreadPercent: number }> = ({ fee
     if (isNaN(feePercent) || isNaN(spreadPercent) || (feePercent === 0 && spreadPercent === 0)) {
         return <div className="w-10 h-10 rounded-full bg-slate-700/50 flex-shrink-0"></div>;
     }
-    const conicGradient = `conic-gradient(#f59e0b ${feePercent}%, #fbbf24 0)`;
-    return <div className="w-10 h-10 rounded-full flex-shrink-0" style={{ background: conicGradient }} role="img" aria-label={`Gráfico de pizza: ${spreadPercent.toFixed(0)}% Spread, ${feePercent.toFixed(0)}% Taxas`}></div>;
+    
+    // Corresponds to text-amber-500 for "Taxas"
+    const feeColor = '#f59e0b'; 
+    // Corresponds to text-yellow-400 for "Spread"
+    const spreadColor = '#facc15'; 
+
+    const conicGradient = `conic-gradient(${feeColor} ${feePercent}%, ${spreadColor} ${feePercent}%)`;
+
+    return <div 
+        className="w-10 h-10 rounded-full flex-shrink-0" 
+        style={{ background: conicGradient }} 
+        role="img" 
+        aria-label={`Gráfico de pizza: ${spreadPercent.toFixed(0)}% Spread, ${feePercent.toFixed(0)}% Taxas`}
+    ></div>;
 };
 
 

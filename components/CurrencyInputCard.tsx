@@ -61,7 +61,7 @@ export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input,
                     </select>
                     {selectedCurrencyInfo && (
                          <img 
-                            src={`https://flagcdn.com/${selectedCurrencyInfo.countryCode}.svg`} 
+                            src={`https://flagcdn.com/w40/${selectedCurrencyInfo.countryCode}.png`} 
                             alt={`Bandeira ${selectedCurrencyInfo.name}`}
                             className="w-6 h-auto absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none select-none rounded-sm"
                          />
