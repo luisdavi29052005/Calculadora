@@ -17,7 +17,7 @@ const PieChart: React.FC<{ feePercent: number, spreadPercent: number }> = ({ fee
     // Corresponds to text-yellow-400 for "Spread"
     const spreadColor = '#facc15'; 
 
-    const conicGradient = `conic-gradient(${feeColor} ${feePercent}%, ${spreadColor} ${feePercent}%)`;
+    const conicGradient = `conic-gradient(${feeColor} 0% ${feePercent}%, ${spreadColor} ${feePercent}% 100%)`;
 
     return <div 
         className="w-10 h-10 rounded-full flex-shrink-0" 
@@ -56,6 +56,7 @@ export const TotalResultCard: React.FC<TotalResultCardProps> = ({
 
         const originalAmountFormatted = result.baseValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const feeFormatted = result.paypalFeeForeign.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const formatOptions = { minimumFractionDigits: 2, maximumFractionDigits: 3 };
 
         return (
              <div key={id} className="bg-[#0F1422] rounded-2xl p-4 border border-[#1F2942] transition-all duration-300">
@@ -67,27 +68,36 @@ export const TotalResultCard: React.FC<TotalResultCardProps> = ({
                     <div>
                         <h5 className="font-semibold text-slate-300 mb-1">Em BRL (R$)</h5>
                         <dl className="text-sm space-y-1">
-                            <div className="flex justify-between items-baseline"><dt className="text-slate-400">Bruto:</dt><dd className="font-mono tabular-nums">{result.grossBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</dd></div>
-                            <div className="flex justify-between items-baseline text-green-400"><dt className="font-semibold">Líquido:</dt><dd className="font-mono tabular-nums font-semibold">{result.netBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</dd></div>
+                            <div className="flex justify-between items-baseline"><dt className="text-slate-400">Bruto:</dt><dd className="font-mono tabular-nums">{result.grossBRL.toLocaleString('pt-BR', formatOptions)}</dd></div>
+                            <div className="flex justify-between items-baseline"><dt className="font-semibold text-green-400">Líquido:</dt><dd className="font-mono tabular-nums font-semibold text-green-400">{result.netBRL.toLocaleString('pt-BR', formatOptions)}</dd></div>
                         </dl>
                     </div>
                      {/* USD Breakdown */}
                     <div>
                         <h5 className="font-semibold text-slate-300 mb-1">Em USD ($)</h5>
                         <dl className="text-sm space-y-1">
-                            <div className="flex justify-between items-baseline"><dt className="text-slate-400">Bruto:</dt><dd className="font-mono tabular-nums">{result.grossUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })}</dd></div>
-                            <div className="flex justify-between items-baseline text-green-400"><dt className="font-semibold">Líquido:</dt><dd className="font-mono tabular-nums font-semibold">{result.netUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })}</dd></div>
+                            <div className="flex justify-between items-baseline"><dt className="text-slate-400">Bruto:</dt><dd className="font-mono tabular-nums">{result.grossUSD.toLocaleString('en-US', formatOptions)}</dd></div>
+                            <div className="flex justify-between items-baseline"><dt className="font-semibold text-green-400">Líquido:</dt><dd className="font-mono tabular-nums font-semibold text-green-400">{result.netUSD.toLocaleString('en-US', formatOptions)}</dd></div>
                         </dl>
                     </div>
                 </div>
                 {/* Loss Breakdown */}
                 <div className="mt-4 pt-3 border-t border-[#1F2942]/50 text-sm">
-                     <dl className="space-y-1.5">
-                        <div className="flex justify-between items-baseline text-amber-400"><dt className="font-semibold">Perda Total:</dt><dd className="font-mono tabular-nums font-semibold">{result.totalLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</dd></div>
-                        <div className="flex justify-between items-baseline pl-2"><dt className="text-slate-400">└ Custo Taxas:</dt><dd className="font-mono tabular-nums text-slate-300">{result.feeLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</dd></div>
-                        <div className="flex justify-between items-baseline pl-2"><dt className="text-slate-400">└ Custo Spread:</dt><dd className="font-mono tabular-nums text-slate-300">{result.spreadLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</dd></div>
-                        <div className="flex justify-between items-baseline mt-1 pt-1 border-t border-transparent"><dt className="text-slate-500">Taxa PayPal ({input.currency}):</dt><dd className="font-mono tabular-nums text-slate-400">{feeFormatted}</dd></div>
-                    </dl>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
+                        <dl className="space-y-1.5">
+                            <div className="flex justify-between items-baseline text-amber-400"><dt className="font-semibold">Perda Total:</dt><dd className="font-mono tabular-nums font-semibold">{result.totalLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</dd></div>
+                            <div className="flex justify-between items-baseline pl-2"><dt className="text-slate-400">└ Custo Taxas:</dt><dd className="font-mono tabular-nums text-slate-300">{result.feeLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</dd></div>
+                            <div className="flex justify-between items-baseline pl-2"><dt className="text-slate-400">└ Custo Spread:</dt><dd className="font-mono tabular-nums text-slate-300">{result.spreadLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</dd></div>
+                        </dl>
+                        <div className="flex flex-col justify-end">
+                             <dl>
+                                 <div className="flex justify-between items-baseline">
+                                     <dt className="text-slate-500 text-nowrap">Taxa PayPal ({input.currency}):</dt>
+                                     <dd className="font-mono tabular-nums text-slate-400 pl-2">{feeFormatted}</dd>
+                                 </div>
+                            </dl>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -130,7 +140,7 @@ export const TotalResultCard: React.FC<TotalResultCardProps> = ({
             {hasResults && (
                  <div>
                     <h3 className="text-2xl font-bold text-slate-200 tracking-tight mb-4">Detalhamento</h3>
-                    <div className="space-y-4">
+                    <div className="max-h-[60vh] overflow-y-auto space-y-4 pr-2">
                         {inputs.map(input => renderDetailedCard(input.id))}
                     </div>
                 </div>
