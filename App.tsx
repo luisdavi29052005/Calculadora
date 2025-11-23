@@ -157,36 +157,37 @@ const App: React.FC = () => {
                             Calcule taxas de recebimento comercial e conversões em tempo real com precisão.
                         </p>
                     </div>
-                    <div className="flex flex-row flex-wrap items-center justify-start md:justify-end gap-4 relative z-20">
-                         <div className="flex flex-wrap items-center gap-2">
-                             <div className="flex items-center gap-1 bg-slate-900/50 p-1.5 rounded-lg border border-slate-800">
-                                 <div className="hidden sm:block px-3 py-1 text-xs text-slate-400 font-medium">MODO</div>
-                                 <button
-                                    onClick={() => setIsMicropayment(false)}
-                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all whitespace-nowrap ${!isMicropayment ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
-                                 >
-                                     Comercial Padrão
-                                 </button>
-                                 <button
-                                    onClick={() => setIsMicropayment(true)}
-                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all whitespace-nowrap ${isMicropayment ? 'bg-indigo-600 text-white shadow-glow-sm' : 'text-slate-500 hover:text-slate-300'}`}
-                                 >
-                                     Comercial Micro
-                                 </button>
-                             </div>
+                    
+                    <div className="flex flex-row items-center justify-between md:justify-end gap-3 w-full md:w-auto relative z-20">
+                         <div className="flex items-center gap-1 bg-slate-900/50 p-1 rounded-lg border border-slate-800 shrink-0">
+                             <div className="hidden lg:block px-3 py-1 text-xs text-slate-400 font-medium">MODO</div>
+                             <button
+                                onClick={() => setIsMicropayment(false)}
+                                className={`px-3 py-1.5 md:py-1 text-xs font-bold rounded-md transition-all whitespace-nowrap ${!isMicropayment ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                             >
+                                 <span className="sm:hidden">Padrão</span>
+                                 <span className="hidden sm:inline">Comercial Padrão</span>
+                             </button>
+                             <button
+                                onClick={() => setIsMicropayment(true)}
+                                className={`px-3 py-1.5 md:py-1 text-xs font-bold rounded-md transition-all whitespace-nowrap ${isMicropayment ? 'bg-indigo-600 text-white shadow-glow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                             >
+                                 <span className="sm:hidden">Micro</span>
+                                 <span className="hidden sm:inline">Comercial Micro</span>
+                             </button>
                              
                              {/* Info Button & Tooltip */}
-                             <div className="relative" ref={infoRef}>
+                             <div className="relative border-l border-slate-800 pl-1 ml-1" ref={infoRef}>
                                  <button 
                                      onClick={() => setShowInfo(!showInfo)}
-                                     className="p-2 text-slate-500 hover:text-cyan-400 transition-colors rounded-full hover:bg-slate-800/50"
+                                     className="p-1.5 text-slate-500 hover:text-cyan-400 transition-colors rounded-full hover:bg-slate-800/50"
                                      aria-label="Informações sobre taxas"
                                  >
                                      <InfoIcon />
                                  </button>
                                  
                                  {showInfo && (
-                                     <div className="absolute right-0 md:right-0 left-auto top-full mt-2 w-[calc(100vw-3rem)] max-w-xs md:w-80 p-4 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 text-sm animate-fade-in">
+                                     <div className="absolute right-0 md:right-0 left-auto top-full mt-2 w-72 max-w-[90vw] p-4 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 text-sm animate-fade-in origin-top-right">
                                          <h4 className="font-bold text-white mb-2 flex items-center gap-2">
                                              <InfoIcon />
                                              Qual escolher?
@@ -195,13 +196,13 @@ const App: React.FC = () => {
                                              <li className="flex gap-2">
                                                  <span className="text-emerald-400 font-bold">•</span>
                                                  <div>
-                                                     <strong className="text-slate-200">Padrão:</strong> Para vendas gerais. Taxa fixa alta (ex: $0.30), % menor.
+                                                     <strong className="text-slate-200">Padrão:</strong> Para vendas gerais. Taxa fixa alta, % menor.
                                                  </div>
                                              </li>
                                              <li className="flex gap-2">
                                                  <span className="text-indigo-400 font-bold">•</span>
                                                  <div>
-                                                     <strong className="text-slate-200">Micro:</strong> Para itens muito baratos (ex: abaixo de $5 USD). Taxa fixa minúscula (ex: $0.05), % maior.
+                                                     <strong className="text-slate-200">Micro:</strong> Para itens baratos (ex: &lt;$5). Taxa fixa baixa, % maior.
                                                  </div>
                                              </li>
                                          </ul>
@@ -213,13 +214,14 @@ const App: React.FC = () => {
                              </div>
                          </div>
 
-                         <div className="flex items-center gap-2 bg-slate-900/50 border border-slate-800 rounded-full px-3 py-1.5">
+                         <div className="flex items-center gap-2 bg-slate-900/50 border border-slate-800 rounded-full px-3 py-1.5 shrink-0">
                             <span className={`relative flex h-2 w-2`}>
                               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isLoading ? 'bg-amber-400' : 'bg-emerald-400'}`}></span>
                               <span className={`relative inline-flex rounded-full h-2 w-2 ${isLoading ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
                             </span>
                             <span className={`text-xs font-mono font-medium ${isLoading ? 'text-amber-400' : 'text-emerald-400'}`}>
-                                {isLoading ? 'Sincronizando...' : 'Conectado'}
+                                <span className="sm:hidden">{isLoading ? 'Sinc...' : 'Online'}</span>
+                                <span className="hidden sm:inline">{isLoading ? 'Sincronizando...' : 'Conectado'}</span>
                             </span>
                         </div>
                     </div>
