@@ -1,32 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { CalculationInput, CalculationResult } from '../types';
 
-const InfoIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-);
-
-const PieChart: React.FC<{ feePercent: number, spreadPercent: number }> = ({ feePercent, spreadPercent }) => {
-    if (isNaN(feePercent) || isNaN(spreadPercent) || (feePercent === 0 && spreadPercent === 0)) {
-        return <div className="w-10 h-10 rounded-full bg-slate-700/50 flex-shrink-0"></div>;
-    }
+// Minimalist Donut Chart
+const DonutChart: React.FC<{ percentage: number, color: string, size?: number }> = ({ percentage, color, size = 40 }) => {
+    const radius = size / 2 - 4;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDasharray = `${(percentage / 100) * circumference} ${circumference}`;
     
-    // Corresponds to text-amber-500 for "Taxas"
-    const feeColor = '#f59e0b'; 
-    // Corresponds to text-yellow-400 for "Spread"
-    const spreadColor = '#facc15'; 
-
-    const conicGradient = `conic-gradient(${feeColor} 0% ${feePercent}%, ${spreadColor} ${feePercent}% 100%)`;
-
-    return <div 
-        className="w-10 h-10 rounded-full flex-shrink-0" 
-        style={{ background: conicGradient }} 
-        role="img" 
-        aria-label={`Gráfico de pizza: ${spreadPercent.toFixed(0)}% Spread, ${feePercent.toFixed(0)}% Taxas`}
-    ></div>;
+    return (
+        <div style={{ width: size, height: size }} className="relative flex items-center justify-center">
+            <svg className="transform -rotate-90 w-full h-full" viewBox={`0 0 ${size} ${size}`}>
+                <circle cx={size/2} cy={size/2} r={radius} stroke="#1e293b" strokeWidth="4" fill="transparent" />
+                <circle cx={size/2} cy={size/2} r={radius} stroke={color} strokeWidth="4" fill="transparent" strokeDasharray={strokeDasharray} strokeLinecap="round" />
+            </svg>
+        </div>
+    );
 };
-
 
 interface TotalResultCardProps {
     totalNetBRL: number;
@@ -45,58 +34,75 @@ export const TotalResultCard: React.FC<TotalResultCardProps> = ({
     totalFeeLoss, totalSpreadLoss, results, inputs 
 }) => {
     
+    const [isBreakdownOpen, setIsBreakdownOpen] = useState(true);
+    
     const hasResults = inputs.some(input => results[input.id]);
-    const feePercentage = totalFeesAndSpread > 0 ? (totalFeeLoss / totalFeesAndSpread) * 100 : 0;
-    const spreadPercentage = totalFeesAndSpread > 0 ? (totalSpreadLoss / totalFeesAndSpread) * 100 : 0;
+    const validResults = Object.values(results).filter((r): r is CalculationResult => r !== null);
 
-    const renderDetailedCard = (id: number) => {
+    // Detailed aggregations
+    const totalFixedFeeLossBRL = validResults.reduce((sum, r) => sum + r.fixedFeeLossBRL, 0);
+    const totalVariableFeeLossBRL = validResults.reduce((sum, r) => sum + r.variableFeeLossBRL, 0);
+
+    // USD Equivalents for the breakdown
+    // We infer the average effective USD rate from the totals to convert the BRL losses back to USD approx.
+    // Or simpler: sum the components if we had them in USD. Since we only have BRL losses, we convert back using the implied rate.
+    const impliedUSDRate = totalGrossBRL > 0 ? totalGrossBRL / totalGrossUSD : 5.0; // Fallback
+    
+    const totalFeeLossUSD = totalFeeLoss / impliedUSDRate;
+    const totalSpreadLossUSD = totalSpreadLoss / impliedUSDRate;
+    const totalFixedFeeLossUSD = totalFixedFeeLossBRL / impliedUSDRate;
+    const totalVariableFeeLossUSD = totalVariableFeeLossBRL / impliedUSDRate;
+
+    // Percentages
+    const feePercentage = totalGrossBRL > 0 ? (totalFeeLoss / totalGrossBRL) * 100 : 0;
+    const spreadPercentage = totalGrossBRL > 0 ? (totalSpreadLoss / totalGrossBRL) * 100 : 0;
+    const netPercentage = totalGrossBRL > 0 ? (totalNetBRL / totalGrossBRL) * 100 : 0;
+
+    const renderListItem = (id: number) => {
         const result = results[id];
         const input = inputs.find(i => i.id === id);
         if (!result || !input) return null;
 
-        const originalAmountFormatted = result.baseValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const feeFormatted = result.paypalFeeForeign.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const formatOptions = { minimumFractionDigits: 2, maximumFractionDigits: 3 };
+        const originalAmountFormatted = parseFloat(input.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const feeOriginal = result.paypalFeeForeign.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
         return (
-             <div key={id} className="bg-[#0F1422] rounded-2xl p-4 border border-[#1F2942] transition-all duration-300">
-                <h4 className="font-bold text-lg text-slate-300 mb-3">
-                    {originalAmountFormatted} <span className="text-slate-400 font-medium text-base">{input.currency}</span>
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                    {/* BRL Breakdown */}
-                    <div>
-                        <h5 className="font-semibold text-slate-300 mb-1">Em BRL (R$)</h5>
-                        <dl className="text-sm space-y-1">
-                            <div className="flex justify-between items-baseline"><dt className="text-slate-400">Bruto:</dt><dd className="font-mono tabular-nums">{result.grossBRL.toLocaleString('pt-BR', formatOptions)}</dd></div>
-                            <div className="flex justify-between items-baseline"><dt className="font-semibold text-green-400">Líquido:</dt><dd className="font-mono tabular-nums font-semibold text-green-400">{result.netBRL.toLocaleString('pt-BR', formatOptions)}</dd></div>
-                        </dl>
+             <div key={id} className="group flex flex-col sm:grid sm:grid-cols-12 gap-3 sm:gap-4 items-start sm:items-center p-4 border-b border-slate-800/50 last:border-0 hover:bg-slate-800/30 transition-colors">
+                
+                {/* Col 1: Original Amount */}
+                <div className="w-full sm:col-span-4 flex items-center gap-3">
+                     <div className="w-1 h-8 bg-slate-700 rounded-full group-hover:bg-cyan-500 transition-colors shrink-0"></div>
+                     <div>
+                        <div className="text-base font-bold text-slate-200 tabular-nums">
+                            {input.currency} {originalAmountFormatted}
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-mono">
+                            Tx: {result.exchangeRate.toFixed(4)} BRL
+                        </div>
+                     </div>
+                </div>
+                
+                {/* Col 2: Fees Breakdown */}
+                <div className="w-full sm:col-span-5 flex flex-col gap-1 pl-4 sm:pl-0 border-l border-slate-800/50 sm:border-l-0">
+                    <div className="flex justify-between items-center text-xs">
+                         <span className="text-slate-500">Taxas:</span>
+                         <div className="text-right">
+                             <span className="text-amber-500/90 font-mono">-{feeOriginal} {input.currency}</span>
+                             <span className="text-slate-600 mx-1">/</span>
+                             <span className="text-amber-500 font-mono">-{result.feeLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                         </div>
                     </div>
-                     {/* USD Breakdown */}
-                    <div>
-                        <h5 className="font-semibold text-slate-300 mb-1">Em USD ($)</h5>
-                        <dl className="text-sm space-y-1">
-                            <div className="flex justify-between items-baseline"><dt className="text-slate-400">Bruto:</dt><dd className="font-mono tabular-nums">{result.grossUSD.toLocaleString('en-US', formatOptions)}</dd></div>
-                            <div className="flex justify-between items-baseline"><dt className="font-semibold text-green-400">Líquido:</dt><dd className="font-mono tabular-nums font-semibold text-green-400">{result.netUSD.toLocaleString('en-US', formatOptions)}</dd></div>
-                        </dl>
+                    <div className="flex justify-between items-center text-xs">
+                         <span className="text-slate-500">Spread:</span>
+                         <span className="text-red-400 font-mono text-right">-{result.spreadLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
                 </div>
-                {/* Loss Breakdown */}
-                <div className="mt-4 pt-3 border-t border-[#1F2942]/50 text-sm">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
-                        <dl className="space-y-1.5">
-                            <div className="flex justify-between items-baseline text-amber-400"><dt className="font-semibold">Perda Total:</dt><dd className="font-mono tabular-nums font-semibold">{result.totalLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</dd></div>
-                            <div className="flex justify-between items-baseline pl-2"><dt className="text-slate-400">└ Custo Taxas:</dt><dd className="font-mono tabular-nums text-slate-300">{result.feeLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</dd></div>
-                            <div className="flex justify-between items-baseline pl-2"><dt className="text-slate-400">└ Custo Spread:</dt><dd className="font-mono tabular-nums text-slate-300">{result.spreadLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</dd></div>
-                        </dl>
-                        <div className="flex flex-col justify-end">
-                             <dl>
-                                 <div className="flex justify-between items-baseline">
-                                     <dt className="text-slate-500 text-nowrap">Taxa PayPal ({input.currency}):</dt>
-                                     <dd className="font-mono tabular-nums text-slate-400 pl-2">{feeFormatted}</dd>
-                                 </div>
-                            </dl>
-                        </div>
+
+                {/* Col 3: Net Result */}
+                <div className="w-full sm:col-span-3 flex justify-between sm:block sm:text-right pl-4 sm:pl-2 border-l border-slate-800/50">
+                    <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5 sm:hidden">Líquido</div>
+                    <div className="text-lg font-bold text-emerald-400 font-mono tabular-nums">
+                        {result.netBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </div>
                 </div>
             </div>
@@ -104,44 +110,169 @@ export const TotalResultCard: React.FC<TotalResultCardProps> = ({
     };
 
     return (
-        <div className="w-full flex flex-col gap-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Gross Card */}
-                <div className="bg-[#0F1422] border border-[#1F2942] rounded-2xl p-5 shadow-2xl shadow-black/30">
-                    <h2 className="text-base font-semibold text-slate-400 mb-1">Valor Bruto Total</h2>
-                    <p className="text-4xl font-bold text-slate-300 tracking-tight tabular-nums">{totalGrossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                    <p className="text-lg text-slate-400 tabular-nums">≈ {totalGrossUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
-                </div>
-                
-                {/* Loss Card */}
-                <div className="bg-[#0F1422] border border-[#1F2942] rounded-2xl p-5 shadow-2xl shadow-black/30">
-                    <h2 className="text-base font-semibold text-slate-400 mb-1">Total Perdido</h2>
-                    <p className="text-4xl font-bold text-amber-400 tracking-tight tabular-nums">{totalFeesAndSpread.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                    <div className="flex items-center gap-3 mt-2 pt-2 border-t border-[#1F2942]/50 text-sm">
-                        <PieChart feePercent={feePercentage} spreadPercent={spreadPercentage} />
-                        <div className="w-full">
-                            <div className="flex justify-between items-baseline"><span className="text-slate-400"><span className="text-amber-500">■</span> Taxas:</span> <span className="font-mono tabular-nums">{totalFeeLoss.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
-                            <div className="flex justify-between items-baseline"><span className="text-slate-400"><span className="text-yellow-400">■</span> Spread:</span> <span className="font-mono tabular-nums">{totalSpreadLoss.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+        <div className="w-full space-y-6 animate-fade-in">
+            
+            {/* Dashboard Hero Card */}
+            <div className="relative glass-panel rounded-2xl p-6 lg:p-8 overflow-hidden shadow-2xl">
+                 <div className="absolute -top-32 -right-32 w-80 h-80 bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+                 <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+                 
+                 <div className="relative z-10 flex flex-col gap-8">
+                     {/* Main Value */}
+                     <div className="flex flex-col md:flex-row justify-between md:items-end gap-6">
+                        <div className="space-y-2">
+                            <h2 className="text-slate-400 font-semibold text-xs uppercase tracking-[0.2em] flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                Valor Líquido Estimado
+                            </h2>
+                            <div className="flex flex-col">
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-2xl md:text-3xl text-slate-500 font-light mr-1">R$</span>
+                                    <span className="text-5xl sm:text-6xl md:text-7xl font-bold text-white tracking-tight font-mono tabular-nums text-shadow-sm break-all">
+                                        {totalNetBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2 mt-2 bg-slate-900/40 w-fit px-3 py-1 rounded-full border border-slate-800/50">
+                                    <img src="https://flagcdn.com/w20/us.png" alt="US" className="w-4 h-3 rounded-sm opacity-70" />
+                                    <span className="text-slate-300 font-mono text-sm font-medium">
+                                        ≈ {totalNetUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
 
-                {/* Net Card (Primary) */}
-                <div className="sm:col-span-2 bg-[#131A2C] border-2 border-cyan-500/50 rounded-2xl p-6 shadow-2xl shadow-black/30 relative overflow-hidden">
-                     <div className="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] bg-[radial-gradient(circle_at_center,_rgba(0,255,255,0.1)_0,_rgba(0,255,255,0)_40%)] animate-[spin_8s_linear_infinite] opacity-50"></div>
-                     <div className="relative z-10">
-                        <h2 className="text-xl font-bold text-slate-200 mb-1">Você receberá</h2>
-                        <p className="text-6xl font-black bg-clip-text text-transparent bg-gradient-to-r from-green-300 to-cyan-400 py-1 tracking-tight tabular-nums">{totalNetBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                        <p className="text-2xl text-slate-300 font-semibold tabular-nums">≈ {totalNetUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+                         {/* Efficiency Score / Chart */}
+                         <div className="hidden md:flex flex-col items-center justify-center bg-slate-900/30 p-4 rounded-xl border border-slate-800/50 backdrop-blur-sm">
+                             <DonutChart percentage={netPercentage} color="#10b981" size={60} />
+                             <span className="text-[10px] text-slate-400 mt-2 font-medium">EFICIÊNCIA</span>
+                             <span className="text-sm font-bold text-emerald-400">{netPercentage.toFixed(1)}%</span>
+                         </div>
                      </div>
-                </div>
+                     
+                     {/* Summary Grid */}
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="bg-slate-900/60 rounded-xl border border-slate-800 p-3 sm:p-4">
+                             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Bruto Total</span>
+                             <div className="text-sm sm:text-lg font-mono text-slate-200 font-medium tabular-nums truncate">
+                                  {totalGrossBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                             </div>
+                        </div>
+                        <div className="bg-slate-900/60 rounded-xl border border-slate-800 p-3 sm:p-4">
+                             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Total Descontos</span>
+                             <div className="text-sm sm:text-lg font-mono text-red-400 font-medium tabular-nums truncate">
+                                  -{totalFeesAndSpread.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                             </div>
+                        </div>
+                         <div className="bg-slate-900/60 rounded-xl border border-slate-800 p-3 sm:p-4 col-span-2 md:col-span-2 flex items-center justify-between">
+                             <div className='flex flex-col'>
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Custo Efetivo Total</span>
+                                <div className="text-xs text-slate-500">Sobre o valor bruto</div>
+                             </div>
+                             <div className="text-xl font-mono text-slate-200 font-bold tabular-nums">
+                                  {(100 - netPercentage).toFixed(2)}%
+                             </div>
+                        </div>
+                     </div>
+                 </div>
             </div>
 
+            {/* Collapsible Detailed Breakdown */}
+            <div className="glass-panel rounded-xl overflow-hidden transition-all duration-300">
+                <button 
+                    onClick={() => setIsBreakdownOpen(!isBreakdownOpen)}
+                    className="w-full flex items-center justify-between p-4 bg-slate-900/40 hover:bg-slate-800/60 transition-colors border-b border-slate-800/50"
+                >
+                    <div className="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-cyan-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                        </svg>
+                        <span className="text-sm font-bold text-slate-200 uppercase tracking-wide">Raio-X das Taxas</span>
+                    </div>
+                    <svg className={`w-5 h-5 text-slate-500 transform transition-transform ${isBreakdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+
+                {isBreakdownOpen && (
+                    <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-900/20">
+                        {/* 1. Taxa Fixa */}
+                        <div className="relative group">
+                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div className="relative space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-sm font-semibold text-slate-300">Taxa Fixa</h4>
+                                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Por transação</span>
+                                </div>
+                                <div className="space-y-1">
+                                    <div className="text-lg font-mono font-medium text-slate-200">
+                                        -{totalFixedFeeLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    </div>
+                                    <div className="text-xs font-mono text-slate-500">
+                                        ≈ {totalFixedFeeLossUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                                    </div>
+                                </div>
+                                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                    <div className="bg-blue-500 h-full rounded-full" style={{ width: `${(totalFixedFeeLossBRL / totalFeesAndSpread) * 100}%` }}></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 2. Taxa Variável */}
+                        <div className="relative group">
+                            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div className="relative space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-sm font-semibold text-slate-300">Taxa Variável</h4>
+                                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">~6.4%</span>
+                                </div>
+                                <div className="space-y-1">
+                                    <div className="text-lg font-mono font-medium text-amber-500">
+                                        -{totalVariableFeeLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    </div>
+                                    <div className="text-xs font-mono text-slate-500">
+                                        ≈ {totalVariableFeeLossUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                                    </div>
+                                </div>
+                                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                    <div className="bg-amber-500 h-full rounded-full" style={{ width: `${(totalVariableFeeLossBRL / totalFeesAndSpread) * 100}%` }}></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. Spread */}
+                        <div className="relative group">
+                            <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div className="relative space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-sm font-semibold text-slate-300">Spread Cambial</h4>
+                                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">3.5% a 4.5%</span>
+                                </div>
+                                <div className="space-y-1">
+                                    <div className="text-lg font-mono font-medium text-red-400">
+                                        -{totalSpreadLoss.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    </div>
+                                    <div className="text-xs font-mono text-slate-500">
+                                        ≈ {totalSpreadLossUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                                    </div>
+                                </div>
+                                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                    <div className="bg-red-500 h-full rounded-full" style={{ width: `${(totalSpreadLoss / totalFeesAndSpread) * 100}%` }}></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Ledger / Transaction List */}
             {hasResults && (
-                 <div>
-                    <h3 className="text-2xl font-bold text-slate-200 tracking-tight mb-4">Detalhamento</h3>
-                    <div className="max-h-[60vh] overflow-y-auto space-y-4 pr-2">
-                        {inputs.map(input => renderDetailedCard(input.id))}
+                <div className="glass-panel rounded-xl overflow-hidden border border-slate-800">
+                    <div className="bg-slate-900/80 px-4 sm:px-6 py-4 border-b border-slate-800 flex justify-between items-center backdrop-blur-md">
+                        <h3 className="text-sm font-bold text-slate-200 tracking-wide uppercase">Extrato Detalhado</h3>
+                        <span className="text-[10px] sm:text-xs font-mono text-slate-500 bg-slate-800 px-2 py-1 rounded border border-slate-700/50">{inputs.length} ITEMS</span>
+                    </div>
+                    <div className="divide-y divide-slate-800/50 bg-slate-900/20">
+                        {inputs.map(input => renderListItem(input.id))}
                     </div>
                 </div>
             )}

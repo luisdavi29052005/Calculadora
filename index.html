@@ -1,6 +1,5 @@
-
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,18 +7,69 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            },
+            colors: {
+              slate: {
+                850: '#151b2e',
+                900: '#0f172a',
+                950: '#020617',
+              },
+              emerald: {
+                450: '#10b981', // Custom adjustments for dark mode readability
+              }
+            },
+            backgroundImage: {
+              'grid-pattern': "linear-gradient(to right, #1e293b 1px, transparent 1px), linear-gradient(to bottom, #1e293b 1px, transparent 1px)",
+            },
+            boxShadow: {
+              'glow': '0 0 20px rgba(6, 182, 212, 0.15)',
+              'glow-sm': '0 0 10px rgba(6, 182, 212, 0.1)',
+            }
+          }
+        }
+      }
+    </script>
     <style>
       body {
-        font-family: 'Inter', sans-serif;
-        background-color: #0B0F1A; /* New Base Background */
-        background-image: radial-gradient(ellipse 50% 80% at 50% 120%, rgba(30, 64, 175, 0.15), transparent);
-        background-repeat: no-repeat;
-        background-size: 100% 100%;
+        background-color: #020617;
+        /* Premium Gradient Background */
+        background-image: 
+          radial-gradient(circle at 15% 0%, rgba(6, 182, 212, 0.08), transparent 25%),
+          radial-gradient(circle at 85% 0%, rgba(99, 102, 241, 0.08), transparent 25%);
         min-height: 100vh;
+        color: #e2e8f0;
       }
-      .tabular-nums {
-        font-variant-numeric: tabular-nums;
+      
+      .glass-panel {
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(148, 163, 184, 0.08);
+      }
+
+      /* Custom Scrollbar for a polished feel */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(71, 85, 105, 0.4); 
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(71, 85, 105, 0.7); 
       }
     </style>
   <script type="importmap">
@@ -32,9 +82,10 @@
 }
 </script>
 </head>
-  <body>
+  <body class="antialiased selection:bg-cyan-500/20 selection:text-cyan-200">
+    <div class="fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none z-0"></div>
     <noscript>Você precisa habilitar o JavaScript para rodar este aplicativo.</noscript>
-    <div id="root"></div>
+    <div id="root" class="relative z-10"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

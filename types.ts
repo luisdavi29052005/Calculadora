@@ -29,9 +29,18 @@ export interface CalculationResult {
     grossUSD: number;
     exchangeRate: number;
     rateWithSpread: number;
-    paypalFeeForeign: number;
+    
+    // Fee Breakdown
+    paypalFeeForeign: number; // Total fee in foreign currency
+    fixedFeeForeign: number;  // Just the fixed part (e.g., 0.30)
+    variableFeeForeign: number; // Just the % part
+    
     baseValue: number;
+    
+    // Losses converted to BRL
     totalLossBRL: number;
     spreadLossBRL: number;
-    feeLossBRL: number;
+    feeLossBRL: number;     // Total fee loss
+    fixedFeeLossBRL: number; // Portion of fee loss due to fixed fee
+    variableFeeLossBRL: number; // Portion of fee loss due to % fee
 }
