@@ -1,5 +1,7 @@
+
 import React, { useState } from 'react';
 import type { CalculationInput, CalculationResult } from '../types';
+import { PAYPAL_FEES, DEFAULT_FEES } from '../constants';
 
 // Minimalist Donut Chart
 const DonutChart: React.FC<{ percentage: number, color: string, size?: number }> = ({ percentage, color, size = 40 }) => {
@@ -27,11 +29,12 @@ interface TotalResultCardProps {
     totalSpreadLoss: number;
     results: Record<number, CalculationResult | null>;
     inputs: CalculationInput[];
+    isMicropayment?: boolean;
 }
 
 export const TotalResultCard: React.FC<TotalResultCardProps> = ({ 
     totalNetBRL, totalGrossBRL, totalNetUSD, totalGrossUSD, totalFeesAndSpread, 
-    totalFeeLoss, totalSpreadLoss, results, inputs 
+    totalFeeLoss, totalSpreadLoss, results, inputs, isMicropayment = false 
 }) => {
     
     const [isBreakdownOpen, setIsBreakdownOpen] = useState(true);
@@ -44,19 +47,27 @@ export const TotalResultCard: React.FC<TotalResultCardProps> = ({
     const totalVariableFeeLossBRL = validResults.reduce((sum, r) => sum + r.variableFeeLossBRL, 0);
 
     // USD Equivalents for the breakdown
-    // We infer the average effective USD rate from the totals to convert the BRL losses back to USD approx.
-    // Or simpler: sum the components if we had them in USD. Since we only have BRL losses, we convert back using the implied rate.
     const impliedUSDRate = totalGrossBRL > 0 ? totalGrossBRL / totalGrossUSD : 5.0; // Fallback
     
-    const totalFeeLossUSD = totalFeeLoss / impliedUSDRate;
-    const totalSpreadLossUSD = totalSpreadLoss / impliedUSDRate;
     const totalFixedFeeLossUSD = totalFixedFeeLossBRL / impliedUSDRate;
     const totalVariableFeeLossUSD = totalVariableFeeLossBRL / impliedUSDRate;
+    const totalSpreadLossUSD = totalSpreadLoss / impliedUSDRate;
 
     // Percentages
-    const feePercentage = totalGrossBRL > 0 ? (totalFeeLoss / totalGrossBRL) * 100 : 0;
-    const spreadPercentage = totalGrossBRL > 0 ? (totalSpreadLoss / totalGrossBRL) * 100 : 0;
     const netPercentage = totalGrossBRL > 0 ? (totalNetBRL / totalGrossBRL) * 100 : 0;
+    
+    // Determine dynamic label for variable fee
+    // Check if we have BRL mixed with others or just one type
+    const uniqueCurrencies = [...new Set(inputs.map(i => i.currency))];
+    let variableFeeLabel = "";
+    
+    if (uniqueCurrencies.length === 1 && uniqueCurrencies[0] === 'BRL') {
+        variableFeeLabel = isMicropayment ? '9.50%' : '4.79%';
+    } else if (uniqueCurrencies.includes('BRL')) {
+        variableFeeLabel = 'Misto';
+    } else {
+        variableFeeLabel = isMicropayment ? '10.50%' : '6.40%';
+    }
 
     const renderListItem = (id: number) => {
         const result = results[id];
@@ -65,6 +76,10 @@ export const TotalResultCard: React.FC<TotalResultCardProps> = ({
 
         const originalAmountFormatted = parseFloat(input.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const feeOriginal = result.paypalFeeForeign.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        
+        // Dynamic percent for this specific item
+        const fees = PAYPAL_FEES[input.currency] || DEFAULT_FEES;
+        const percentUsed = isMicropayment ? fees.micropayment_percent : fees.fee_percent;
 
         return (
              <div key={id} className="group flex flex-col sm:grid sm:grid-cols-12 gap-3 sm:gap-4 items-start sm:items-center p-4 border-b border-slate-800/50 last:border-0 hover:bg-slate-800/30 transition-colors">
@@ -77,7 +92,7 @@ export const TotalResultCard: React.FC<TotalResultCardProps> = ({
                             {input.currency} {originalAmountFormatted}
                         </div>
                         <div className="text-[11px] text-slate-500 font-mono">
-                            Tx: {result.exchangeRate.toFixed(4)} BRL
+                            {input.currency === 'BRL' ? 'Doméstico' : `Tx: ${result.exchangeRate.toFixed(4)} BRL`}
                         </div>
                      </div>
                 </div>
@@ -85,17 +100,19 @@ export const TotalResultCard: React.FC<TotalResultCardProps> = ({
                 {/* Col 2: Fees Breakdown */}
                 <div className="w-full sm:col-span-5 flex flex-col gap-1 pl-4 sm:pl-0 border-l border-slate-800/50 sm:border-l-0">
                     <div className="flex justify-between items-center text-xs">
-                         <span className="text-slate-500">Taxas:</span>
+                         <span className="text-slate-500">Comercial ({percentUsed.toFixed(2)}%):</span>
                          <div className="text-right">
                              <span className="text-amber-500/90 font-mono">-{feeOriginal} {input.currency}</span>
                              <span className="text-slate-600 mx-1">/</span>
                              <span className="text-amber-500 font-mono">-{result.feeLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                          </div>
                     </div>
-                    <div className="flex justify-between items-center text-xs">
-                         <span className="text-slate-500">Spread:</span>
-                         <span className="text-red-400 font-mono text-right">-{result.spreadLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                    </div>
+                    {result.spreadLossBRL > 0 && (
+                        <div className="flex justify-between items-center text-xs">
+                             <span className="text-slate-500">Spread:</span>
+                             <span className="text-red-400 font-mono text-right">-{result.spreadLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Col 3: Net Result */}
@@ -222,8 +239,8 @@ export const TotalResultCard: React.FC<TotalResultCardProps> = ({
                             <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
                             <div className="relative space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <h4 className="text-sm font-semibold text-slate-300">Taxa Variável</h4>
-                                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">~6.4%</span>
+                                    <h4 className="text-sm font-semibold text-slate-300">Taxa Comercial</h4>
+                                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">{variableFeeLabel}</span>
                                 </div>
                                 <div className="space-y-1">
                                     <div className="text-lg font-mono font-medium text-amber-500">
@@ -245,7 +262,7 @@ export const TotalResultCard: React.FC<TotalResultCardProps> = ({
                             <div className="relative space-y-3">
                                 <div className="flex items-center justify-between">
                                     <h4 className="text-sm font-semibold text-slate-300">Spread Cambial</h4>
-                                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">3.5% a 4.5%</span>
+                                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">3.5%</span>
                                 </div>
                                 <div className="space-y-1">
                                     <div className="text-lg font-mono font-medium text-red-400">

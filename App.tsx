@@ -1,8 +1,9 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { CurrencyInputCard } from './components/CurrencyInputCard';
 import { TotalResultCard } from './components/TotalResultCard';
 import { PlusIcon } from './components/icons/PlusIcon';
+import { InfoIcon } from './components/icons/InfoIcon';
 import type { CalculationInput, CalculationResult } from './types';
 import { CURRENCIES } from './constants';
 import { getExchangeRates } from './services/exchangeRateService';
@@ -16,6 +17,22 @@ const App: React.FC = () => {
     const [rates, setRates] = useState<Record<string, number>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isMicropayment, setIsMicropayment] = useState(false);
+    const [showInfo, setShowInfo] = useState(false);
+    const infoRef = useRef<HTMLDivElement>(null);
+
+    // Click outside to close tooltip
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (infoRef.current && !infoRef.current.contains(event.target as Node)) {
+                setShowInfo(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     const fetchRates = useCallback(async () => {
         if (inputs.length === 0) {
@@ -62,7 +79,7 @@ const App: React.FC = () => {
                     newResults[input.id] = null;
                     continue;
                 }
-                newResults[input.id] = calculatePayPalConversion(amount, input.currency, rate, usdRate);
+                newResults[input.id] = calculatePayPalConversion(amount, input.currency, rate, usdRate, isMicropayment);
             }
         }
 
@@ -71,7 +88,7 @@ const App: React.FC = () => {
              fetchRates();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [inputs, rates]);
+    }, [inputs, rates, isMicropayment]);
     
 
     const handleInputChange = (id: number, field: 'amount' | 'currency', value: string) => {
@@ -138,22 +155,74 @@ const App: React.FC = () => {
                             Simulador Financeiro
                         </h1>
                         <p className="text-slate-400 text-sm md:text-base max-w-lg">
-                            Calcule taxas de recebimento internacional e conversões em tempo real com precisão.
+                            Calcule taxas de recebimento comercial e conversões em tempo real com precisão.
                         </p>
                     </div>
-                    <div className="flex flex-col items-start md:items-end">
-                         <div className="text-left md:text-right">
-                            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-2">Status da API</p>
-                            <div className="flex items-center gap-2 bg-slate-900/50 border border-slate-800 rounded-full px-3 py-1.5">
-                                <span className={`relative flex h-2 w-2`}>
-                                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isLoading ? 'bg-amber-400' : 'bg-emerald-400'}`}></span>
-                                  <span className={`relative inline-flex rounded-full h-2 w-2 ${isLoading ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
-                                </span>
-                                <span className={`text-xs font-mono font-medium ${isLoading ? 'text-amber-400' : 'text-emerald-400'}`}>
-                                    {isLoading ? 'Sincronizando...' : 'Conectado'}
-                                </span>
-                            </div>
+                    <div className="flex flex-col items-start md:items-end gap-3 relative z-20">
+                         <div className="flex items-center gap-2">
+                             <div className="flex items-center gap-1 bg-slate-900/50 p-1.5 rounded-lg border border-slate-800">
+                                 <div className="px-3 py-1 text-xs text-slate-400 font-medium">MODO</div>
+                                 <button
+                                    onClick={() => setIsMicropayment(false)}
+                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${!isMicropayment ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                 >
+                                     Comercial Padrão
+                                 </button>
+                                 <button
+                                    onClick={() => setIsMicropayment(true)}
+                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${isMicropayment ? 'bg-indigo-600 text-white shadow-glow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                 >
+                                     Comercial Micro
+                                 </button>
+                             </div>
+                             
+                             {/* Info Button & Tooltip */}
+                             <div className="relative" ref={infoRef}>
+                                 <button 
+                                     onClick={() => setShowInfo(!showInfo)}
+                                     className="p-2 text-slate-500 hover:text-cyan-400 transition-colors rounded-full hover:bg-slate-800/50"
+                                     aria-label="Informações sobre taxas"
+                                 >
+                                     <InfoIcon />
+                                 </button>
+                                 
+                                 {showInfo && (
+                                     <div className="absolute right-0 top-full mt-2 w-72 md:w-80 p-4 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 text-sm animate-fade-in">
+                                         <h4 className="font-bold text-white mb-2 flex items-center gap-2">
+                                             <InfoIcon />
+                                             Qual escolher?
+                                         </h4>
+                                         <ul className="space-y-3 text-slate-300">
+                                             <li className="flex gap-2">
+                                                 <span className="text-emerald-400 font-bold">•</span>
+                                                 <div>
+                                                     <strong className="text-slate-200">Padrão:</strong> Para vendas gerais. Taxa fixa alta (ex: $0.30), % menor.
+                                                 </div>
+                                             </li>
+                                             <li className="flex gap-2">
+                                                 <span className="text-indigo-400 font-bold">•</span>
+                                                 <div>
+                                                     <strong className="text-slate-200">Micro:</strong> Para itens muito baratos (ex: abaixo de $5 USD). Taxa fixa minúscula (ex: $0.05), % maior.
+                                                 </div>
+                                             </li>
+                                         </ul>
+                                         <div className="mt-3 pt-3 border-t border-slate-800 text-xs text-slate-500 italic">
+                                             Você deve solicitar a mudança da conta para Micropagamentos no suporte do PayPal.
+                                         </div>
+                                     </div>
+                                 )}
+                             </div>
                          </div>
+
+                         <div className="flex items-center gap-2 bg-slate-900/50 border border-slate-800 rounded-full px-3 py-1.5 self-end">
+                            <span className={`relative flex h-2 w-2`}>
+                              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isLoading ? 'bg-amber-400' : 'bg-emerald-400'}`}></span>
+                              <span className={`relative inline-flex rounded-full h-2 w-2 ${isLoading ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
+                            </span>
+                            <span className={`text-xs font-mono font-medium ${isLoading ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                {isLoading ? 'Sincronizando...' : 'Conectado'}
+                            </span>
+                        </div>
                     </div>
                 </header>
 
@@ -217,12 +286,13 @@ const App: React.FC = () => {
                             totalFeeLoss={totalFeeLoss}
                             totalSpreadLoss={totalSpreadLoss}
                             results={results} 
-                            inputs={inputs} 
+                            inputs={inputs}
+                            isMicropayment={isMicropayment}
                         />
                          
                         <div className="flex justify-between items-center text-[10px] text-slate-600 px-2 font-mono">
-                            <span>* Valores estimados. Spread de 3.5% aplicado.</span>
-                            <span>v1.3.0</span>
+                            <span>* Taxas {isMicropayment ? 'Micro' : 'Padrão'} vigentes (Jul/2025).</span>
+                            <span>v1.5.0</span>
                         </div>
                     </div>
                 </main>

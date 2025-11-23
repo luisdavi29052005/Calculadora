@@ -8,7 +8,9 @@ export interface CurrencyInfo {
 
 export interface PayPalFeeInfo {
     fee_percent: number;
+    micropayment_percent: number;
     fixed_fee: number;
+    micropayment_fixed_fee: number;
     spread_percent: number;
 }
 

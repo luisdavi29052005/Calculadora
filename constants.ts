@@ -1,40 +1,48 @@
 
 import type { PayPalFees, CurrencyInfo } from './types';
 
-// For international commercial transactions received by a Brazilian account.
-// Percentage fee is 4.79% (domestic) + 1.61% (international) = 6.40%.
-// Currency conversion spread is 3.50% for receiving payments.
-// Fees based on document: "pt-br-merchant-fees-16-july-2025"
+// Based on PayPal Merchant Fees Document (Effective July 16, 2025)
+// Standard International Commercial Transaction: 4.79% (Domestic) + 1.61% (Intl) = 6.40%.
+// Standard Domestic Commercial Transaction: 4.79%.
+// Micropayments International: 10.50% + Micropayment Fixed Fee.
+// Micropayments Domestic: 9.50% + Micropayment Fixed Fee.
+// Currency Conversion Spread for Receiving: 3.50%.
+
+export const MICROPAYMENT_PERCENT_INTL = 10.50;
+
 export const PAYPAL_FEES: PayPalFees = {
-    "AUD": { "fee_percent": 6.40, "fixed_fee": 0.30, "spread_percent": 3.50 },
-    "CAD": { "fee_percent": 6.40, "fixed_fee": 0.30, "spread_percent": 3.50 },
-    "CZK": { "fee_percent": 6.40, "fixed_fee": 10.00, "spread_percent": 3.50 },
-    "DKK": { "fee_percent": 6.40, "fixed_fee": 2.60, "spread_percent": 3.50 },
-    "EUR": { "fee_percent": 6.40, "fixed_fee": 0.35, "spread_percent": 3.50 },
-    "HKD": { "fee_percent": 6.40, "fixed_fee": 2.35, "spread_percent": 3.50 },
-    "HUF": { "fee_percent": 6.40, "fixed_fee": 90.00, "spread_percent": 3.50 },
-    "ILS": { "fee_percent": 6.40, "fixed_fee": 1.20, "spread_percent": 3.50 },
-    "JPY": { "fee_percent": 6.40, "fixed_fee": 40.00, "spread_percent": 3.50 },
-    "MYR": { "fee_percent": 6.40, "fixed_fee": 2.00, "spread_percent": 3.50 },
-    "MXN": { "fee_percent": 6.40, "fixed_fee": 4.00, "spread_percent": 3.50 },
-    "TWD": { "fee_percent": 6.40, "fixed_fee": 10.00, "spread_percent": 3.50 },
-    "NZD": { "fee_percent": 6.40, "fixed_fee": 0.45, "spread_percent": 3.50 },
-    "NOK": { "fee_percent": 6.40, "fixed_fee": 2.80, "spread_percent": 3.50 },
-    "PHP": { "fee_percent": 6.40, "fixed_fee": 15.00, "spread_percent": 3.50 },
-    "PLN": { "fee_percent": 6.40, "fixed_fee": 1.35, "spread_percent": 3.50 },
-    "RUB": { "fee_percent": 6.40, "fixed_fee": 10.00, "spread_percent": 3.50 },
-    "SGD": { "fee_percent": 6.40, "fixed_fee": 0.50, "spread_percent": 3.50 },
-    "SEK": { "fee_percent": 6.40, "fixed_fee": 3.25, "spread_percent": 3.50 },
-    "CHF": { "fee_percent": 6.40, "fixed_fee": 0.55, "spread_percent": 3.50 },
-    "THB": { "fee_percent": 6.40, "fixed_fee": 11.00, "spread_percent": 3.50 },
-    "GBP": { "fee_percent": 6.40, "fixed_fee": 0.20, "spread_percent": 3.50 },
-    "USD": { "fee_percent": 6.40, "fixed_fee": 0.30, "spread_percent": 3.50 },
+    "AUD": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 0.30, "micropayment_fixed_fee": 0.05, "spread_percent": 3.50 },
+    "CAD": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 0.30, "micropayment_fixed_fee": 0.05, "spread_percent": 3.50 },
+    "CZK": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 10.00, "micropayment_fixed_fee": 1.67, "spread_percent": 3.50 },
+    "DKK": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 2.60, "micropayment_fixed_fee": 0.43, "spread_percent": 3.50 },
+    "EUR": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 0.35, "micropayment_fixed_fee": 0.05, "spread_percent": 3.50 },
+    "HKD": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 2.35, "micropayment_fixed_fee": 0.39, "spread_percent": 3.50 },
+    "HUF": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 90.00, "micropayment_fixed_fee": 15.00, "spread_percent": 3.50 },
+    "ILS": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 1.20, "micropayment_fixed_fee": 0.20, "spread_percent": 3.50 },
+    "JPY": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 40.00, "micropayment_fixed_fee": 7.00, "spread_percent": 3.50 },
+    "MYR": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 2.00, "micropayment_fixed_fee": 0.20, "spread_percent": 3.50 },
+    "MXN": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 4.00, "micropayment_fixed_fee": 0.55, "spread_percent": 3.50 },
+    "TWD": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 10.00, "micropayment_fixed_fee": 2.00, "spread_percent": 3.50 },
+    "NZD": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 0.45, "micropayment_fixed_fee": 0.08, "spread_percent": 3.50 },
+    "NOK": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 2.80, "micropayment_fixed_fee": 0.47, "spread_percent": 3.50 },
+    "PHP": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 15.00, "micropayment_fixed_fee": 2.50, "spread_percent": 3.50 },
+    "PLN": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 1.35, "micropayment_fixed_fee": 0.23, "spread_percent": 3.50 },
+    "RUB": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 10.00, "micropayment_fixed_fee": 2.00, "spread_percent": 3.50 },
+    "SGD": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 0.50, "micropayment_fixed_fee": 0.08, "spread_percent": 3.50 },
+    "SEK": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 3.25, "micropayment_fixed_fee": 0.54, "spread_percent": 3.50 },
+    "CHF": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 0.55, "micropayment_fixed_fee": 0.09, "spread_percent": 3.50 },
+    "THB": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 11.00, "micropayment_fixed_fee": 1.80, "spread_percent": 3.50 },
+    "GBP": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 0.20, "micropayment_fixed_fee": 0.05, "spread_percent": 3.50 },
+    "USD": { "fee_percent": 6.40, "micropayment_percent": 10.50, "fixed_fee": 0.30, "micropayment_fixed_fee": 0.05, "spread_percent": 3.50 },
+    // Domestic BRL
+    "BRL": { "fee_percent": 4.79, "micropayment_percent": 9.50, "fixed_fee": 0.60, "micropayment_fixed_fee": 0.10, "spread_percent": 0.00 },
 };
 
-export const DEFAULT_FEES = { "fee_percent": 6.40, "fixed_fee": 0.30, "spread_percent": 4.50 };
+export const DEFAULT_FEES = PAYPAL_FEES["USD"];
 
 export const CURRENCIES: CurrencyInfo[] = [
     { code: "USD", name: "US Dollar", countryCode: "us", symbol: "$" },
+    { code: "BRL", name: "Real Brasileiro", countryCode: "br", symbol: "R$" },
     { code: "EUR", name: "Euro", countryCode: "eu", symbol: "€" },
     { code: "GBP", name: "British Pound", countryCode: "gb", symbol: "£" },
     { code: "JPY", name: "Japanese Yen", countryCode: "jp", symbol: "¥" },

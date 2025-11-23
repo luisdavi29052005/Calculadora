@@ -6,22 +6,31 @@ export function calculatePayPalConversion(
     value: number,
     currency: string,
     exchangeRate: number,
-    usdRate: number
+    usdRate: number,
+    isMicropayment: boolean = false
 ): CalculationResult {
     const fees = PAYPAL_FEES[currency] || DEFAULT_FEES;
-    const fee_percent = fees.fee_percent / 100;
-    const fixed_fee = fees.fixed_fee;
+    
+    // Determine Percentage Fee
+    // Use specific micropayment percent from constants (10.50% Intl vs 9.50% Domestic)
+    const fee_percent_val = isMicropayment ? fees.micropayment_percent : fees.fee_percent;
+    const fee_percent = fee_percent_val / 100;
+    
+    // Determine Fixed Fee
+    const fixed_fee = isMicropayment ? fees.micropayment_fixed_fee : fees.fixed_fee;
+    
     const spread_percent = fees.spread_percent / 100;
 
-    // 1. Calculate Fees in Foreign Currency
+    // 1. Calculate Fees in Source Currency
     const variableFeeForeign = value * fee_percent;
     const fixedFeeForeign = fixed_fee;
     const paypalFeeForeign = variableFeeForeign + fixedFeeForeign;
 
-    // 2. Determine Exchange Rates
+    // 2. Determine Exchange Rates (Apply spread only if conversion needed)
+    // If currency is BRL, spread is usually 0 in constants, so rate remains 1.
     const rateWithSpread = exchangeRate * (1 - spread_percent);
     
-    // 3. Calculate Net in Foreign Currency
+    // 3. Calculate Net in Source Currency
     const netAfterFees = Math.max(0, value - paypalFeeForeign);
     
     // 4. Convert to BRL (Realization)
@@ -29,30 +38,15 @@ export function calculatePayPalConversion(
     const grossBRL = value * exchangeRate;
     
     // 5. Calculate Losses in BRL
-    // The "Loss" is the difference between the Gross Market Value and the Net Realized Value.
-    // However, to breakdown specifically:
-    
-    // Spread Loss: The value lost purely due to the exchange rate difference on the gross amount? 
-    // Usually spread is applied at conversion. 
-    // PayPal logic: (Amount - Fees) * BidRate * (1 - Spread).
-    // Loss Breakdown:
-    // Fee Loss (in BRL terms) = FeeForeign * RateWithSpread
     const feeLossBRL = paypalFeeForeign * rateWithSpread;
     const fixedFeeLossBRL = fixedFeeForeign * rateWithSpread;
     const variableFeeLossBRL = variableFeeForeign * rateWithSpread;
 
-    // Spread Loss = (GrossBRL) - (Value * RateWithSpread)
-    // Actually, spread applies to the WHOLE amount converted.
-    // The money that "disappears" due to spread is: NetAfterFees * (MarketRate - RateWithSpread)
-    // plus the fees themselves lost some value due to spread? No, fees are deducted before conversion usually.
-    // Let's stick to the standard financial view:
-    // Spread Loss = The difference between converting at Market Rate vs Bank Rate.
-    // We assume the full amount would be converted. 
     const spreadLossBRL = (value - paypalFeeForeign) * (exchangeRate - rateWithSpread);
     
     const totalLossBRL = grossBRL - netBRL;
 
-    // 6. USD Equivalents (based on the effective current USD rate)
+    // 6. USD Equivalents (For display purposes)
     const grossUSD = grossBRL / usdRate;
     const netUSD = netBRL / usdRate;
 
