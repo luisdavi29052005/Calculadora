@@ -134,12 +134,6 @@ const App: React.FC = () => {
                 {/* SaaS Header */}
                 <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-800/60 pb-8">
                     <div className="space-y-3 md:space-y-2">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-glow-sm">
-                                <span className="text-white font-bold text-lg">P</span>
-                            </div>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700 tracking-wider uppercase">Pro</span>
-                        </div>
                         <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-white leading-tight">
                             Simulador Financeiro
                         </h1>
