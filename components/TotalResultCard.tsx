@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import type { CalculationInput, CalculationResult } from '../types';
 import { PAYPAL_FEES, DEFAULT_FEES } from '../constants';
@@ -57,7 +56,6 @@ export const TotalResultCard: React.FC<TotalResultCardProps> = ({
     const netPercentage = totalGrossBRL > 0 ? (totalNetBRL / totalGrossBRL) * 100 : 0;
     
     // Determine dynamic label for variable fee
-    // Check if we have BRL mixed with others or just one type
     const uniqueCurrencies = [...new Set(inputs.map(i => i.currency))];
     let variableFeeLabel = "";
     
@@ -103,8 +101,8 @@ export const TotalResultCard: React.FC<TotalResultCardProps> = ({
                          <span className="text-slate-500">Comercial ({percentUsed.toFixed(2)}%):</span>
                          <div className="text-right">
                              <span className="text-amber-500/90 font-mono">-{feeOriginal} {input.currency}</span>
-                             <span className="text-slate-600 mx-1">/</span>
-                             <span className="text-amber-500 font-mono">-{result.feeLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                             <span className="text-slate-600 mx-1 hidden sm:inline">/</span>
+                             <span className="text-amber-500 font-mono block sm:inline">-{result.feeLossBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                          </div>
                     </div>
                     {result.spreadLossBRL > 0 && (
@@ -134,18 +132,18 @@ export const TotalResultCard: React.FC<TotalResultCardProps> = ({
                  <div className="absolute -top-32 -right-32 w-80 h-80 bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none"></div>
                  <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
                  
-                 <div className="relative z-10 flex flex-col gap-8">
+                 <div className="relative z-10 flex flex-col gap-6 sm:gap-8">
                      {/* Main Value */}
                      <div className="flex flex-col md:flex-row justify-between md:items-end gap-6">
-                        <div className="space-y-2">
+                        <div className="space-y-2 w-full">
                             <h2 className="text-slate-400 font-semibold text-xs uppercase tracking-[0.2em] flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
                                 Valor Líquido Estimado
                             </h2>
                             <div className="flex flex-col">
-                                <div className="flex items-baseline gap-1">
+                                <div className="flex items-baseline gap-1 flex-wrap">
                                     <span className="text-2xl md:text-3xl text-slate-500 font-light mr-1">R$</span>
-                                    <span className="text-5xl sm:text-6xl md:text-7xl font-bold text-white tracking-tight font-mono tabular-nums text-shadow-sm break-all">
+                                    <span className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight font-mono tabular-nums text-shadow-sm break-all leading-tight">
                                         {totalNetBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
                                 </div>
@@ -158,8 +156,8 @@ export const TotalResultCard: React.FC<TotalResultCardProps> = ({
                             </div>
                         </div>
 
-                         {/* Efficiency Score / Chart */}
-                         <div className="hidden md:flex flex-col items-center justify-center bg-slate-900/30 p-4 rounded-xl border border-slate-800/50 backdrop-blur-sm">
+                         {/* Efficiency Score / Chart - Hidden on very small screens, visible on md+ */}
+                         <div className="hidden md:flex flex-col items-center justify-center bg-slate-900/30 p-4 rounded-xl border border-slate-800/50 backdrop-blur-sm shrink-0">
                              <DonutChart percentage={netPercentage} color="#10b981" size={60} />
                              <span className="text-[10px] text-slate-400 mt-2 font-medium">EFICIÊNCIA</span>
                              <span className="text-sm font-bold text-emerald-400">{netPercentage.toFixed(1)}%</span>

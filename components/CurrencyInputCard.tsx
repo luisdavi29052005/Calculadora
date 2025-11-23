@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { CalculationInput, CurrencyInfo } from '../types';
 
 const DuplicateIcon: React.FC = () => (
@@ -11,6 +10,18 @@ const DuplicateIcon: React.FC = () => (
 const TrashIcon: React.FC = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+    </svg>
+);
+
+const ChevronDownIcon: React.FC = () => (
+    <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+);
+
+const SearchIcon: React.FC = () => (
+    <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
     </svg>
 );
 
@@ -26,6 +37,39 @@ interface CurrencyInputCardProps {
 
 export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input, onInputChange, currencies, onRemove, onDuplicate, canBeRemoved }) => {
     
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    // Filter currencies based on search
+    const filteredCurrencies = currencies.filter(c => 
+        c.code.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        c.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Focus search input when dropdown opens
+    useEffect(() => {
+        if (isOpen && searchInputRef.current) {
+            setTimeout(() => {
+                searchInputRef.current?.focus();
+            }, 50);
+        } else {
+            setSearchQuery(""); // Reset search on close
+        }
+    }, [isOpen]);
+
     const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         const cleanedValue = value.replace(/[^0-9.,]/g, '').replace(',', '.');
@@ -40,13 +84,21 @@ export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input,
     
     const selectedCurrencyInfo = currencies.find(c => c.code === input.currency);
 
+    const handleSelectCurrency = (code: string) => {
+        onInputChange(id, 'currency', code);
+        setIsOpen(false);
+    };
+
     return (
-        <div className="glass-panel group relative w-full rounded-xl transition-all duration-300 hover:border-slate-600/50 hover:shadow-lg hover:-translate-y-0.5">
+        <div className="glass-panel group relative w-full rounded-xl transition-all duration-300 hover:border-slate-600/50 hover:shadow-lg z-10 hover:z-20">
             <div className="flex flex-row items-center p-1 sm:p-2">
                 
-                {/* Currency Selector */}
-                <div className="relative pl-1 sm:pl-2">
-                    <div className="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 transition-colors rounded-lg px-2 py-2 cursor-pointer border border-slate-700/50">
+                {/* Custom Currency Selector Dropdown */}
+                <div className="relative pl-1 sm:pl-2 shrink-0" ref={dropdownRef}>
+                    <button
+                        onClick={() => setIsOpen(!isOpen)}
+                        className={`flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 transition-all rounded-lg pl-2 pr-2 sm:pr-3 py-2 cursor-pointer border border-slate-700/50 ${isOpen ? 'ring-2 ring-cyan-500/20 border-cyan-500/50' : ''}`}
+                    >
                          {selectedCurrencyInfo && (
                              <img 
                                 src={`https://flagcdn.com/w40/${selectedCurrencyInfo.countryCode}.png`} 
@@ -54,27 +106,77 @@ export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input,
                                 className="w-5 h-3.5 object-cover rounded shadow-sm opacity-90"
                              />
                         )}
-                        <select
-                            id={`currency-${id}`}
-                            value={input.currency}
-                            onChange={(e) => onInputChange(id, 'currency', e.target.value)}
-                            className="bg-transparent text-slate-200 font-bold text-sm focus:outline-none cursor-pointer appearance-none pr-4 hover:text-white transition-colors"
-                        >
-                            {currencies.map(c => (
-                                <option key={c.code} value={c.code} className="bg-slate-900 text-slate-200">
-                                    {c.code}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        <span className="text-slate-200 font-bold text-sm">{input.currency}</span>
+                        <div className={`transition-transform duration-200 hidden sm:block ${isOpen ? 'rotate-180' : ''}`}>
+                             <ChevronDownIcon />
                         </div>
-                    </div>
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {isOpen && (
+                        <div className="absolute top-full left-0 mt-2 w-64 sm:w-72 max-w-[calc(100vw-3rem)] max-h-80 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50 flex flex-col animate-fade-in-down origin-top-left">
+                            {/* Search Header */}
+                            <div className="sticky top-0 bg-slate-900 p-3 border-b border-slate-800 z-10">
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <SearchIcon />
+                                    </div>
+                                    <input
+                                        ref={searchInputRef}
+                                        type="text"
+                                        className="block w-full pl-10 pr-3 py-2 border border-slate-700 rounded-lg leading-5 bg-slate-800 text-slate-300 placeholder-slate-500 focus:outline-none focus:bg-slate-900 focus:border-cyan-500/50 text-base sm:text-sm transition-colors"
+                                        placeholder="Buscar..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* List */}
+                            <div className="overflow-y-auto overflow-x-hidden flex-1 py-1 custom-scrollbar">
+                                {filteredCurrencies.length === 0 ? (
+                                    <div className="px-4 py-6 text-center text-sm text-slate-500">
+                                        Nenhuma moeda encontrada.
+                                    </div>
+                                ) : (
+                                    filteredCurrencies.map((c) => (
+                                        <button
+                                            key={c.code}
+                                            onClick={() => handleSelectCurrency(c.code)}
+                                            className={`w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-slate-800 transition-colors ${c.code === input.currency ? 'bg-cyan-900/10 text-cyan-400' : 'text-slate-300'}`}
+                                        >
+                                            <img 
+                                                src={`https://flagcdn.com/w40/${c.countryCode}.png`} 
+                                                alt={c.code}
+                                                className="w-5 h-3.5 object-cover rounded shadow-sm opacity-80"
+                                            />
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-sm font-bold ${c.code === input.currency ? 'text-cyan-400' : 'text-slate-200'}`}>
+                                                        {c.code}
+                                                    </span>
+                                                    <span className="text-xs text-slate-500 font-mono bg-slate-800/50 px-1 rounded">
+                                                        {c.symbol}
+                                                    </span>
+                                                </div>
+                                                <span className="text-[10px] text-slate-500 uppercase tracking-wide font-medium">
+                                                    {c.name}
+                                                </span>
+                                            </div>
+                                            {c.code === input.currency && (
+                                                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]"></div>
+                                            )}
+                                        </button>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Amount Input */}
-                <div className="relative flex-grow flex items-center px-3 sm:px-4 py-2 sm:py-3 overflow-hidden">
-                    <span className="text-slate-600 font-medium text-lg select-none mr-2 mt-1">
+                <div className="relative flex-grow flex items-center px-2 sm:px-4 py-2 sm:py-3 overflow-hidden">
+                    <span className="text-slate-600 font-medium text-base sm:text-lg select-none mr-1.5 mt-1 shrink-0">
                         {selectedCurrencyInfo?.symbol}
                     </span>
                     <input
@@ -89,10 +191,10 @@ export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input,
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex items-center gap-0.5 sm:gap-1 pr-2 border-l border-slate-800/50 pl-2">
+                <div className="flex items-center gap-0.5 sm:gap-1 pr-1 sm:pr-2 border-l border-slate-800/50 pl-1 sm:pl-2 shrink-0">
                     <button 
                         onClick={() => onDuplicate(id)}
-                        className="p-2 text-slate-600 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-all"
+                        className="p-2 sm:p-2 text-slate-600 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-all"
                         title="Duplicar"
                     >
                         <DuplicateIcon />
@@ -100,7 +202,7 @@ export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input,
                     {canBeRemoved && (
                         <button 
                             onClick={() => onRemove(id)}
-                            className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                            className="p-2 sm:p-2 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
                             title="Remover"
                         >
                             <TrashIcon />

@@ -2,7 +2,7 @@
 <html lang="pt-BR" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Calculadora PayPal Premium</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -47,6 +47,8 @@
           radial-gradient(circle at 85% 0%, rgba(99, 102, 241, 0.08), transparent 25%);
         min-height: 100vh;
         color: #e2e8f0;
+        overflow-x: hidden; /* Prevents ghost areas */
+        -webkit-font-smoothing: antialiased;
       }
       
       .glass-panel {
@@ -70,6 +72,13 @@
       }
       ::-webkit-scrollbar-thumb:hover {
         background: rgba(71, 85, 105, 0.7); 
+      }
+      
+      /* Prevent iOS zoom on inputs */
+      @media screen and (max-width: 768px) {
+        input, select, textarea {
+          font-size: 16px !important;
+        }
       }
     </style>
   <script type="importmap">

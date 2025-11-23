@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { CurrencyInputCard } from './components/CurrencyInputCard';
 import { TotalResultCard } from './components/TotalResultCard';
@@ -145,7 +144,7 @@ const App: React.FC = () => {
 
 
     return (
-        <div className="min-h-screen p-4 sm:p-6 md:p-8 flex justify-center pb-20">
+        <div className="min-h-screen w-full p-4 sm:p-6 md:p-8 flex justify-center pb-10 overflow-hidden">
             <div className="w-full max-w-6xl space-y-8 md:space-y-10">
                 
                 {/* SaaS Header */}
@@ -154,23 +153,23 @@ const App: React.FC = () => {
                         <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-white leading-tight">
                             Simulador Financeiro
                         </h1>
-                        <p className="text-slate-400 text-sm md:text-base max-w-lg">
+                        <p className="text-slate-400 text-sm md:text-base max-w-lg leading-relaxed">
                             Calcule taxas de recebimento comercial e conversões em tempo real com precisão.
                         </p>
                     </div>
-                    <div className="flex flex-col items-start md:items-end gap-3 relative z-20">
-                         <div className="flex items-center gap-2">
+                    <div className="flex flex-row flex-wrap items-center justify-start md:justify-end gap-4 relative z-20">
+                         <div className="flex flex-wrap items-center gap-2">
                              <div className="flex items-center gap-1 bg-slate-900/50 p-1.5 rounded-lg border border-slate-800">
-                                 <div className="px-3 py-1 text-xs text-slate-400 font-medium">MODO</div>
+                                 <div className="hidden sm:block px-3 py-1 text-xs text-slate-400 font-medium">MODO</div>
                                  <button
                                     onClick={() => setIsMicropayment(false)}
-                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${!isMicropayment ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all whitespace-nowrap ${!isMicropayment ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
                                  >
                                      Comercial Padrão
                                  </button>
                                  <button
                                     onClick={() => setIsMicropayment(true)}
-                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${isMicropayment ? 'bg-indigo-600 text-white shadow-glow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all whitespace-nowrap ${isMicropayment ? 'bg-indigo-600 text-white shadow-glow-sm' : 'text-slate-500 hover:text-slate-300'}`}
                                  >
                                      Comercial Micro
                                  </button>
@@ -187,7 +186,7 @@ const App: React.FC = () => {
                                  </button>
                                  
                                  {showInfo && (
-                                     <div className="absolute right-0 top-full mt-2 w-72 md:w-80 p-4 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 text-sm animate-fade-in">
+                                     <div className="absolute right-0 md:right-0 left-auto top-full mt-2 w-[calc(100vw-3rem)] max-w-xs md:w-80 p-4 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 text-sm animate-fade-in">
                                          <h4 className="font-bold text-white mb-2 flex items-center gap-2">
                                              <InfoIcon />
                                              Qual escolher?
@@ -214,7 +213,7 @@ const App: React.FC = () => {
                              </div>
                          </div>
 
-                         <div className="flex items-center gap-2 bg-slate-900/50 border border-slate-800 rounded-full px-3 py-1.5 self-end">
+                         <div className="flex items-center gap-2 bg-slate-900/50 border border-slate-800 rounded-full px-3 py-1.5">
                             <span className={`relative flex h-2 w-2`}>
                               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isLoading ? 'bg-amber-400' : 'bg-emerald-400'}`}></span>
                               <span className={`relative inline-flex rounded-full h-2 w-2 ${isLoading ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
@@ -228,8 +227,8 @@ const App: React.FC = () => {
 
                 <main className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     
-                    {/* Input Section */}
-                    <div className="lg:col-span-5 flex flex-col gap-6 order-2 lg:order-1">
+                    {/* Input Section - First on Mobile, Left on Desktop */}
+                    <div className="lg:col-span-5 flex flex-col gap-6 order-1 lg:order-1">
                         <div className="flex justify-between items-end px-1">
                             <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-widest">Entradas</h2>
                             {inputs.length > 1 && (
@@ -275,8 +274,8 @@ const App: React.FC = () => {
                         </button>
                     </div>
 
-                    {/* Results Dashboard */}
-                    <div className="lg:col-span-7 order-1 lg:order-2 lg:sticky lg:top-6 space-y-6">
+                    {/* Results Dashboard - Second on Mobile, Right on Desktop */}
+                    <div className="lg:col-span-7 order-2 lg:order-2 lg:sticky lg:top-6 space-y-6">
                          <TotalResultCard 
                             totalNetBRL={totalNetBRL}
                             totalGrossBRL={totalGrossBRL}
