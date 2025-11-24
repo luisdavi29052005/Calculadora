@@ -3,6 +3,7 @@ import { CurrencyInputCard } from './components/CurrencyInputCard';
 import { TotalResultCard } from './components/TotalResultCard';
 import { PlusIcon } from './components/icons/PlusIcon';
 import { InfoIcon } from './components/icons/InfoIcon';
+import { CloseIcon } from './components/icons/CloseIcon';
 import type { CalculationInput, CalculationResult } from './types';
 import { CURRENCIES } from './constants';
 import { getExchangeRates } from './services/exchangeRateService';
@@ -20,18 +21,21 @@ const App: React.FC = () => {
     const [showInfo, setShowInfo] = useState(false);
     const infoRef = useRef<HTMLDivElement>(null);
 
-    // Click outside to close tooltip
+    // Click outside to close tooltip (Desktop mainly)
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
+            // Check if click is outside ref AND not on the backdrop (which handles its own click)
             if (infoRef.current && !infoRef.current.contains(event.target as Node)) {
                 setShowInfo(false);
             }
         }
-        document.addEventListener("mousedown", handleClickOutside);
+        if (showInfo) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, []);
+    }, [showInfo]);
 
     const fetchRates = useCallback(async () => {
         if (inputs.length === 0) {
@@ -159,7 +163,7 @@ const App: React.FC = () => {
                     </div>
                     
                     {/* Controls Row - Strictly Horizontal on Mobile */}
-                    <div className="flex flex-row items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar pb-1 md:pb-0 w-full md:w-auto md:justify-end">
+                    <div className="flex flex-row items-center gap-2 sm:gap-3 overflow-visible pb-1 md:pb-0 w-full md:w-auto md:justify-end flex-nowrap">
                          <div className="flex items-center gap-1 bg-slate-900/50 p-1 rounded-lg border border-slate-800 shrink-0">
                              <div className="hidden lg:block px-3 py-1 text-xs text-slate-400 font-medium">MODO</div>
                              <button
@@ -177,40 +181,96 @@ const App: React.FC = () => {
                                  <span className="hidden sm:inline">Comercial Micro</span>
                              </button>
                              
-                             {/* Info Button & Tooltip */}
-                             <div className="relative border-l border-slate-800 pl-1 ml-1" ref={infoRef}>
+                             {/* Info Button & Tooltip Wrapper */}
+                             <div className="relative border-l border-slate-800 pl-1 ml-1">
                                  <button 
                                      onClick={() => setShowInfo(!showInfo)}
-                                     className="p-1.5 text-slate-500 hover:text-cyan-400 transition-colors rounded-full hover:bg-slate-800/50"
+                                     className="p-2 text-slate-500 hover:text-cyan-400 transition-colors rounded-full hover:bg-slate-800/50"
                                      aria-label="Informações sobre taxas"
                                  >
                                      <InfoIcon />
                                  </button>
                                  
                                  {showInfo && (
-                                     <div className="absolute right-0 top-full mt-2 w-72 max-w-[85vw] p-4 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 text-sm animate-fade-in origin-top-right">
-                                         <h4 className="font-bold text-white mb-2 flex items-center gap-2">
-                                             <InfoIcon />
-                                             Qual escolher?
-                                         </h4>
-                                         <ul className="space-y-3 text-slate-300">
-                                             <li className="flex gap-2">
-                                                 <span className="text-emerald-400 font-bold">•</span>
-                                                 <div>
-                                                     <strong className="text-slate-200">Padrão:</strong> Para vendas gerais. Taxa fixa alta, % menor.
-                                                 </div>
-                                             </li>
-                                             <li className="flex gap-2">
-                                                 <span className="text-indigo-400 font-bold">•</span>
-                                                 <div>
-                                                     <strong className="text-slate-200">Micro:</strong> Para itens baratos (ex: &lt;$5). Taxa fixa baixa, % maior.
-                                                 </div>
-                                             </li>
-                                         </ul>
-                                         <div className="mt-3 pt-3 border-t border-slate-800 text-xs text-slate-500 italic">
-                                             Você deve solicitar a mudança da conta para Micropagamentos no suporte do PayPal.
+                                     <>
+                                        {/* Mobile Backdrop Overlay */}
+                                        <div 
+                                            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 sm:hidden animate-fade-in"
+                                            onClick={() => setShowInfo(false)}
+                                        ></div>
+
+                                        {/* Responsive Tooltip/Modal */}
+                                        <div 
+                                            ref={infoRef}
+                                            className={`
+                                                fixed sm:absolute z-50 
+                                                top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 sm:translate-x-0 sm:translate-y-0 sm:top-full sm:left-auto sm:right-0 sm:mt-2
+                                                w-[90vw] sm:w-96 max-w-sm 
+                                                bg-slate-900/95 border border-slate-700/80 rounded-xl shadow-2xl 
+                                                text-sm animate-fade-in origin-center sm:origin-top-right backdrop-blur-xl p-5
+                                            `}
+                                        >
+                                             <div className="flex justify-between items-start border-b border-slate-800 pb-2 mb-3">
+                                                 <h4 className="font-bold text-white flex items-center gap-2">
+                                                     <InfoIcon />
+                                                     Qual modo escolher?
+                                                 </h4>
+                                                 <button 
+                                                    onClick={() => setShowInfo(false)}
+                                                    className="p-1 -mr-2 text-slate-400 hover:text-white transition-colors"
+                                                 >
+                                                     <CloseIcon />
+                                                 </button>
+                                             </div>
+                                             
+                                             <div className="space-y-4 max-h-[60vh] overflow-y-auto sm:max-h-none custom-scrollbar">
+                                                {/* Standard Block */}
+                                                <div className="bg-slate-800/40 p-3 rounded-lg border border-slate-700/50">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                                                        <strong className="text-slate-200">Comercial Padrão</strong>
+                                                    </div>
+                                                    <p className="text-slate-400 text-xs mb-2 leading-relaxed">
+                                                        Melhor para transações acima de <strong className="text-slate-300">R$ 30,00</strong> ($6.00).
+                                                    </p>
+                                                    <div className="text-xs font-mono bg-slate-950/50 p-2 rounded text-slate-300 flex justify-between">
+                                                        <span>Venda $100:</span>
+                                                        <span className="text-emerald-400 font-bold">Taxa MENOR</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Micro Block */}
+                                                <div className="bg-indigo-900/20 p-3 rounded-lg border border-indigo-500/30">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
+                                                        <strong className="text-white">Comercial Micro</strong>
+                                                    </div>
+                                                    <p className="text-slate-400 text-xs mb-2 leading-relaxed">
+                                                        Melhor para valores baixos, abaixo de <strong className="text-slate-300">R$ 30,00</strong>. A taxa fixa é minúscula.
+                                                    </p>
+                                                    <div className="text-xs font-mono bg-slate-950/50 p-2 rounded text-slate-300 flex justify-between">
+                                                        <span>Venda $5:</span>
+                                                        <span className="text-indigo-400 font-bold">Taxa MENOR</span>
+                                                    </div>
+                                                </div>
+                                             </div>
+
+                                             <div className="mt-4 pt-3 border-t border-slate-800 text-xs text-slate-500">
+                                                 <p className="mb-2 italic">
+                                                     Você deve solicitar ao suporte do PayPal para alterar a categoria da sua conta.
+                                                 </p>
+                                                 <a 
+                                                    href="https://www.paypal.com/br/webapps/mpp/merchant-fees" 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 hover:underline transition-colors w-fit"
+                                                 >
+                                                    Ver tabela oficial de tarifas
+                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                                 </a>
+                                             </div>
                                          </div>
-                                     </div>
+                                     </>
                                  )}
                              </div>
                          </div>
