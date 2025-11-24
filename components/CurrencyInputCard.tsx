@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import type { CalculationInput, CurrencyInfo } from '../types';
 
@@ -33,9 +34,10 @@ interface CurrencyInputCardProps {
     onRemove: (id: number) => void;
     onDuplicate: (id: number) => void;
     canBeRemoved: boolean;
+    isReverse?: boolean;
 }
 
-export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input, onInputChange, currencies, onRemove, onDuplicate, canBeRemoved }) => {
+export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input, onInputChange, currencies, onRemove, onDuplicate, canBeRemoved, isReverse = false }) => {
     
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -48,7 +50,6 @@ export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input,
         c.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Close dropdown on outside click
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -59,14 +60,13 @@ export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input,
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Focus search input when dropdown opens
     useEffect(() => {
         if (isOpen && searchInputRef.current) {
             setTimeout(() => {
                 searchInputRef.current?.focus();
             }, 50);
         } else {
-            setSearchQuery(""); // Reset search on close
+            setSearchQuery("");
         }
     }, [isOpen]);
 
@@ -91,6 +91,11 @@ export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input,
 
     return (
         <div className="glass-panel group relative w-full rounded-xl transition-all duration-300 hover:border-slate-600/50 hover:shadow-lg z-10 hover:z-20">
+            {isReverse && (
+                <div className="absolute top-0 right-0 transform -translate-y-1/2 translate-x-2 bg-emerald-500 text-slate-900 text-[10px] font-bold px-2 py-0.5 rounded shadow-lg z-30">
+                    META (BRL)
+                </div>
+            )}
             <div className="flex flex-row items-center p-1 sm:p-2">
                 
                 {/* Custom Currency Selector Dropdown */}
@@ -112,10 +117,8 @@ export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input,
                         </div>
                     </button>
 
-                    {/* Dropdown Menu */}
                     {isOpen && (
                         <div className="absolute top-full left-0 mt-2 w-64 sm:w-72 max-w-[calc(100vw-3rem)] max-h-80 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50 flex flex-col animate-fade-in-down origin-top-left">
-                            {/* Search Header */}
                             <div className="sticky top-0 bg-slate-900 p-3 border-b border-slate-800 z-10">
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -125,50 +128,36 @@ export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input,
                                         ref={searchInputRef}
                                         type="text"
                                         className="block w-full pl-10 pr-3 py-2 border border-slate-700 rounded-lg leading-5 bg-slate-800 text-slate-300 placeholder-slate-500 focus:outline-none focus:bg-slate-900 focus:border-cyan-500/50 text-base sm:text-sm transition-colors"
-                                        placeholder="Buscar..."
+                                        placeholder={isReverse ? "Moeda da Invoice..." : "Buscar moeda..."}
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                     />
                                 </div>
                             </div>
-
-                            {/* List */}
                             <div className="overflow-y-auto overflow-x-hidden flex-1 py-1 custom-scrollbar">
-                                {filteredCurrencies.length === 0 ? (
-                                    <div className="px-4 py-6 text-center text-sm text-slate-500">
-                                        Nenhuma moeda encontrada.
-                                    </div>
-                                ) : (
-                                    filteredCurrencies.map((c) => (
-                                        <button
-                                            key={c.code}
-                                            onClick={() => handleSelectCurrency(c.code)}
-                                            className={`w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-slate-800 transition-colors ${c.code === input.currency ? 'bg-cyan-900/10 text-cyan-400' : 'text-slate-300'}`}
-                                        >
-                                            <img 
-                                                src={`https://flagcdn.com/w40/${c.countryCode}.png`} 
-                                                alt={c.code}
-                                                className="w-5 h-3.5 object-cover rounded shadow-sm opacity-80"
-                                            />
-                                            <div className="flex flex-col">
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`text-sm font-bold ${c.code === input.currency ? 'text-cyan-400' : 'text-slate-200'}`}>
-                                                        {c.code}
-                                                    </span>
-                                                    <span className="text-xs text-slate-500 font-mono bg-slate-800/50 px-1 rounded">
-                                                        {c.symbol}
-                                                    </span>
-                                                </div>
-                                                <span className="text-[10px] text-slate-500 uppercase tracking-wide font-medium">
-                                                    {c.name}
+                                {filteredCurrencies.map((c) => (
+                                    <button
+                                        key={c.code}
+                                        onClick={() => handleSelectCurrency(c.code)}
+                                        className={`w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-slate-800 transition-colors ${c.code === input.currency ? 'bg-cyan-900/10 text-cyan-400' : 'text-slate-300'}`}
+                                    >
+                                        <img 
+                                            src={`https://flagcdn.com/w40/${c.countryCode}.png`} 
+                                            alt={c.code}
+                                            className="w-5 h-3.5 object-cover rounded shadow-sm opacity-80"
+                                        />
+                                        <div className="flex flex-col">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-sm font-bold ${c.code === input.currency ? 'text-cyan-400' : 'text-slate-200'}`}>
+                                                    {c.code}
                                                 </span>
                                             </div>
-                                            {c.code === input.currency && (
-                                                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]"></div>
-                                            )}
-                                        </button>
-                                    ))
-                                )}
+                                            <span className="text-[10px] text-slate-500 uppercase tracking-wide font-medium">
+                                                {c.name}
+                                            </span>
+                                        </div>
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     )}
@@ -177,7 +166,7 @@ export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input,
                 {/* Amount Input */}
                 <div className="relative flex-grow flex items-center px-2 sm:px-4 py-2 sm:py-3 overflow-hidden">
                     <span className="text-slate-600 font-medium text-base sm:text-lg select-none mr-1.5 mt-1 shrink-0">
-                        {selectedCurrencyInfo?.symbol}
+                        {isReverse ? 'R$' : selectedCurrencyInfo?.symbol}
                     </span>
                     <input
                         type="text"
@@ -186,7 +175,6 @@ export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input,
                         onChange={handleAmountChange}
                         placeholder="0.00"
                         className="w-full bg-transparent border-none focus:ring-0 p-0 text-2xl sm:text-3xl font-mono font-medium text-white placeholder-slate-700 transition-colors tabular-nums tracking-tight min-w-0"
-                        aria-label="Valor"
                     />
                 </div>
 

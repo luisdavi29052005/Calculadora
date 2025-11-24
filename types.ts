@@ -1,4 +1,6 @@
 
+export type CalculationMode = 'STANDARD' | 'REVERSE';
+
 export interface CurrencyInfo {
     code: string;
     name: string;

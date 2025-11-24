@@ -1,13 +1,14 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { CurrencyInputCard } from './components/CurrencyInputCard';
 import { TotalResultCard } from './components/TotalResultCard';
 import { PlusIcon } from './components/icons/PlusIcon';
 import { InfoIcon } from './components/icons/InfoIcon';
 import { CloseIcon } from './components/icons/CloseIcon';
-import type { CalculationInput, CalculationResult } from './types';
+import type { CalculationInput, CalculationResult, CalculationMode } from './types';
 import { CURRENCIES } from './constants';
 import { getExchangeRates } from './services/exchangeRateService';
-import { calculatePayPalConversion } from './utils/calculator';
+import { calculatePayPalConversion, calculateReversePayPalConversion } from './utils/calculator';
 
 const App: React.FC = () => {
     const createDefaultInput = () => ({ id: Date.now(), amount: '1000', currency: 'USD' });
@@ -18,13 +19,13 @@ const App: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isMicropayment, setIsMicropayment] = useState(false);
+    const [calculationMode, setCalculationMode] = useState<CalculationMode>('STANDARD');
     const [showInfo, setShowInfo] = useState(false);
     const infoRef = useRef<HTMLDivElement>(null);
 
-    // Click outside to close tooltip (Desktop mainly)
+    // Click outside to close tooltip
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
-            // Check if click is outside ref AND not on the backdrop (which handles its own click)
             if (infoRef.current && !infoRef.current.contains(event.target as Node)) {
                 setShowInfo(false);
             }
@@ -82,7 +83,13 @@ const App: React.FC = () => {
                     newResults[input.id] = null;
                     continue;
                 }
-                newResults[input.id] = calculatePayPalConversion(amount, input.currency, rate, usdRate, isMicropayment);
+                
+                if (calculationMode === 'STANDARD') {
+                    newResults[input.id] = calculatePayPalConversion(amount, input.currency, rate, usdRate, isMicropayment);
+                } else {
+                    // Reverse Mode: Amount is Target BRL
+                    newResults[input.id] = calculateReversePayPalConversion(amount, input.currency, rate, usdRate, isMicropayment);
+                }
             }
         }
 
@@ -91,7 +98,7 @@ const App: React.FC = () => {
              fetchRates();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [inputs, rates, isMicropayment]);
+    }, [inputs, rates, isMicropayment, calculationMode]);
     
 
     const handleInputChange = (id: number, field: 'amount' | 'currency', value: string) => {
@@ -108,10 +115,6 @@ const App: React.FC = () => {
         let newCurrency = 'EUR';
         if (existingCurrencies.has('EUR') && !existingCurrencies.has('GBP')) {
           newCurrency = 'GBP';
-        } else if (existingCurrencies.has('EUR') && existingCurrencies.has('GBP') && !existingCurrencies.has('CAD')) {
-          newCurrency = 'CAD';
-        } else if (existingCurrencies.has('EUR') && existingCurrencies.has('GBP') && existingCurrencies.has('CAD')) {
-          newCurrency = 'AUD';
         }
 
         const newCard: CalculationInput = { id: newId, amount: '1000', currency: newCurrency };
@@ -158,48 +161,62 @@ const App: React.FC = () => {
                             Simulador Financeiro
                         </h1>
                         <p className="text-slate-400 text-sm md:text-base max-w-lg leading-relaxed">
-                            Calcule taxas de recebimento comercial e conversões em tempo real com precisão.
+                            A ferramenta definitiva para freelancers negociarem taxas e invoices internacionais.
                         </p>
                     </div>
                     
-                    {/* Controls Row - Strictly Horizontal on Mobile */}
+                    {/* Controls Row */}
                     <div className="flex flex-row items-center gap-2 sm:gap-3 overflow-visible pb-1 md:pb-0 w-full md:w-auto md:justify-end flex-nowrap">
+                         
+                         {/* Calculation Mode Toggle */}
+                         <div className="flex bg-slate-900/80 p-1 rounded-lg border border-slate-700/50 shrink-0">
+                             <button
+                                onClick={() => setCalculationMode('STANDARD')}
+                                className={`px-3 py-1 text-xs font-bold rounded-md transition-all whitespace-nowrap ${calculationMode === 'STANDARD' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                             >
+                                 Receber
+                             </button>
+                             <button
+                                onClick={() => setCalculationMode('REVERSE')}
+                                className={`px-3 py-1 text-xs font-bold rounded-md transition-all whitespace-nowrap ${calculationMode === 'REVERSE' ? 'bg-cyan-600 text-white shadow-glow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                title="Calcula quanto cobrar para receber um valor exato"
+                             >
+                                 Cobrar
+                             </button>
+                         </div>
+
                          <div className="flex items-center gap-1 bg-slate-900/50 p-1 rounded-lg border border-slate-800 shrink-0">
-                             <div className="hidden lg:block px-3 py-1 text-xs text-slate-400 font-medium">MODO</div>
                              <button
                                 onClick={() => setIsMicropayment(false)}
                                 className={`px-3 py-1.5 md:py-1 text-xs font-bold rounded-md transition-all whitespace-nowrap ${!isMicropayment ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
                              >
                                  <span className="sm:hidden">Padrão</span>
-                                 <span className="hidden sm:inline">Comercial Padrão</span>
+                                 <span className="hidden sm:inline">Conta Padrão</span>
                              </button>
                              <button
                                 onClick={() => setIsMicropayment(true)}
                                 className={`px-3 py-1.5 md:py-1 text-xs font-bold rounded-md transition-all whitespace-nowrap ${isMicropayment ? 'bg-indigo-600 text-white shadow-glow-sm' : 'text-slate-500 hover:text-slate-300'}`}
                              >
                                  <span className="sm:hidden">Micro</span>
-                                 <span className="hidden sm:inline">Comercial Micro</span>
+                                 <span className="hidden sm:inline">Conta Micro</span>
                              </button>
                              
-                             {/* Info Button & Tooltip Wrapper */}
+                             {/* Info Button */}
                              <div className="relative border-l border-slate-800 pl-1 ml-1">
                                  <button 
                                      onClick={() => setShowInfo(!showInfo)}
                                      className="p-2 text-slate-500 hover:text-cyan-400 transition-colors rounded-full hover:bg-slate-800/50"
-                                     aria-label="Informações sobre taxas"
+                                     aria-label="Informações"
                                  >
                                      <InfoIcon />
                                  </button>
                                  
                                  {showInfo && (
                                      <>
-                                        {/* Mobile Backdrop Overlay */}
                                         <div 
                                             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 sm:hidden animate-fade-in"
                                             onClick={() => setShowInfo(false)}
                                         ></div>
-
-                                        {/* Responsive Tooltip/Modal */}
                                         <div 
                                             ref={infoRef}
                                             className={`
@@ -213,61 +230,36 @@ const App: React.FC = () => {
                                              <div className="flex justify-between items-start border-b border-slate-800 pb-2 mb-3">
                                                  <h4 className="font-bold text-white flex items-center gap-2">
                                                      <InfoIcon />
-                                                     Qual modo escolher?
+                                                     Guia do Freelancer
                                                  </h4>
-                                                 <button 
-                                                    onClick={() => setShowInfo(false)}
-                                                    className="p-1 -mr-2 text-slate-400 hover:text-white transition-colors"
-                                                 >
+                                                 <button onClick={() => setShowInfo(false)} className="p-1 -mr-2 text-slate-400 hover:text-white transition-colors">
                                                      <CloseIcon />
                                                  </button>
                                              </div>
                                              
                                              <div className="space-y-4 max-h-[60vh] overflow-y-auto sm:max-h-none custom-scrollbar">
-                                                {/* Standard Block */}
                                                 <div className="bg-slate-800/40 p-3 rounded-lg border border-slate-700/50">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-                                                        <strong className="text-slate-200">Comercial Padrão</strong>
+                                                        <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+                                                        <strong className="text-slate-200">Modo Cobrar (Reverse)</strong>
                                                     </div>
-                                                    <p className="text-slate-400 text-xs mb-2 leading-relaxed">
-                                                        Melhor para transações acima de <strong className="text-slate-300">R$ 30,00</strong> ($6.00).
+                                                    <p className="text-slate-400 text-xs leading-relaxed">
+                                                        Use isso para negociar. Digite quanto quer <strong>receber no bolso (em R$)</strong> e nós calculamos quanto você deve colocar na Invoice em USD/EUR.
                                                     </p>
-                                                    <div className="text-xs font-mono bg-slate-950/50 p-2 rounded text-slate-300 flex justify-between">
-                                                        <span>Venda $100:</span>
-                                                        <span className="text-emerald-400 font-bold">Taxa MENOR</span>
-                                                    </div>
                                                 </div>
 
-                                                {/* Micro Block */}
                                                 <div className="bg-indigo-900/20 p-3 rounded-lg border border-indigo-500/30">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
-                                                        <strong className="text-white">Comercial Micro</strong>
+                                                        <strong className="text-white">Tipos de Conta</strong>
                                                     </div>
-                                                    <p className="text-slate-400 text-xs mb-2 leading-relaxed">
-                                                        Melhor para valores baixos, abaixo de <strong className="text-slate-300">R$ 30,00</strong>. A taxa fixa é minúscula.
+                                                    <p className="text-slate-400 text-xs mb-1">
+                                                        <strong>Padrão:</strong> Melhor para transações acima de R$ 30,00.
                                                     </p>
-                                                    <div className="text-xs font-mono bg-slate-950/50 p-2 rounded text-slate-300 flex justify-between">
-                                                        <span>Venda $5:</span>
-                                                        <span className="text-indigo-400 font-bold">Taxa MENOR</span>
-                                                    </div>
+                                                    <p className="text-slate-400 text-xs">
+                                                        <strong>Micro:</strong> Peça ao suporte para ativar se você vende itens muito baratos (abaixo de $5).
+                                                    </p>
                                                 </div>
-                                             </div>
-
-                                             <div className="mt-4 pt-3 border-t border-slate-800 text-xs text-slate-500">
-                                                 <p className="mb-2 italic">
-                                                     Você deve solicitar ao suporte do PayPal para alterar a categoria da sua conta.
-                                                 </p>
-                                                 <a 
-                                                    href="https://www.paypal.com/br/webapps/mpp/merchant-fees" 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 hover:underline transition-colors w-fit"
-                                                 >
-                                                    Ver tabela oficial de tarifas
-                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                                                 </a>
                                              </div>
                                          </div>
                                      </>
@@ -290,10 +282,11 @@ const App: React.FC = () => {
 
                 <main className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     
-                    {/* Input Section - First on Mobile, Left on Desktop */}
                     <div className="lg:col-span-5 flex flex-col gap-6 order-1 lg:order-1">
                         <div className="flex justify-between items-end px-1">
-                            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-widest">Entradas</h2>
+                            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-widest">
+                                {calculationMode === 'STANDARD' ? 'Valores a Receber (Bruto)' : 'Metas de Recebimento (Líquido)'}
+                            </h2>
                             {inputs.length > 1 && (
                                 <button 
                                     onClick={clearAllInputs}
@@ -322,6 +315,7 @@ const App: React.FC = () => {
                                     onDuplicate={duplicateInputCard}
                                     canBeRemoved={inputs.length > 1}
                                     currencies={CURRENCIES}
+                                    isReverse={calculationMode === 'REVERSE'}
                                 />
                             ))}
                         </div>
@@ -337,7 +331,6 @@ const App: React.FC = () => {
                         </button>
                     </div>
 
-                    {/* Results Dashboard - Second on Mobile, Right on Desktop */}
                     <div className="lg:col-span-7 order-2 lg:order-2 lg:sticky lg:top-6 space-y-6">
                          <TotalResultCard 
                             totalNetBRL={totalNetBRL}
@@ -350,11 +343,12 @@ const App: React.FC = () => {
                             results={results} 
                             inputs={inputs}
                             isMicropayment={isMicropayment}
+                            mode={calculationMode}
                         />
                          
                         <div className="flex justify-between items-center text-[10px] text-slate-600 px-2 font-mono">
-                            <span>* Taxas {isMicropayment ? 'Micro' : 'Padrão'} vigentes (Jul/2025).</span>
-                            <span>v1.5.0</span>
+                            <span>* Taxas baseadas no PDF Jul/2025.</span>
+                            <span>v2.0.0</span>
                         </div>
                     </div>
                 </main>
