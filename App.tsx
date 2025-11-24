@@ -158,7 +158,8 @@ const App: React.FC = () => {
                         </p>
                     </div>
                     
-                    <div className="flex flex-row items-center justify-between md:justify-end gap-3 w-full md:w-auto relative z-20">
+                    {/* Controls Row - Strictly Horizontal on Mobile */}
+                    <div className="flex flex-row items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar pb-1 md:pb-0 w-full md:w-auto md:justify-end">
                          <div className="flex items-center gap-1 bg-slate-900/50 p-1 rounded-lg border border-slate-800 shrink-0">
                              <div className="hidden lg:block px-3 py-1 text-xs text-slate-400 font-medium">MODO</div>
                              <button
@@ -187,7 +188,7 @@ const App: React.FC = () => {
                                  </button>
                                  
                                  {showInfo && (
-                                     <div className="absolute right-0 md:right-0 left-auto top-full mt-2 w-72 max-w-[90vw] p-4 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 text-sm animate-fade-in origin-top-right">
+                                     <div className="absolute right-0 top-full mt-2 w-72 max-w-[85vw] p-4 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 text-sm animate-fade-in origin-top-right">
                                          <h4 className="font-bold text-white mb-2 flex items-center gap-2">
                                              <InfoIcon />
                                              Qual escolher?
@@ -220,7 +221,7 @@ const App: React.FC = () => {
                               <span className={`relative inline-flex rounded-full h-2 w-2 ${isLoading ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
                             </span>
                             <span className={`text-xs font-mono font-medium ${isLoading ? 'text-amber-400' : 'text-emerald-400'}`}>
-                                <span className="sm:hidden">{isLoading ? 'Sinc...' : 'Online'}</span>
+                                <span className="sm:hidden">{isLoading ? 'Sinc...' : 'Conectado'}</span>
                                 <span className="hidden sm:inline">{isLoading ? 'Sincronizando...' : 'Conectado'}</span>
                             </span>
                         </div>
