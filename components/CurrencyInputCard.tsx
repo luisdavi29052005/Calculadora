@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import type { CalculationInput, CurrencyInfo } from '../types';
 
@@ -71,15 +70,26 @@ export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input,
     }, [isOpen]);
 
     const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        const cleanedValue = value.replace(/[^0-9.,]/g, '').replace(',', '.');
-        const parts = cleanedValue.split('.');
-        if (parts.length > 2) {
-            const finalValue = parts[0] + '.' + parts.slice(1).join('');
-             onInputChange(id, 'amount', finalValue);
-             return;
+        let value = e.target.value;
+        
+        // Remove everything that is not a digit
+        value = value.replace(/\D/g, "");
+        
+        if (value === "") {
+            onInputChange(id, 'amount', "");
+            return;
         }
-        onInputChange(id, 'amount', cleanedValue);
+
+        // Convert to number (cents)
+        const numericValue = parseInt(value, 10) / 100;
+        
+        // Format back to pt-BR (X.XXX,XX)
+        const formatted = numericValue.toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+        
+        onInputChange(id, 'amount', formatted);
     };
     
     const selectedCurrencyInfo = currencies.find(c => c.code === input.currency);
@@ -170,10 +180,10 @@ export const CurrencyInputCard: React.FC<CurrencyInputCardProps> = ({ id, input,
                     </span>
                     <input
                         type="text"
-                        inputMode="decimal"
+                        inputMode="numeric"
                         value={input.amount}
                         onChange={handleAmountChange}
-                        placeholder="0.00"
+                        placeholder="0,00"
                         className="w-full bg-transparent border-none focus:ring-0 p-0 text-2xl sm:text-3xl font-mono font-medium text-white placeholder-slate-700 transition-colors tabular-nums tracking-tight min-w-0"
                     />
                 </div>

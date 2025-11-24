@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { CurrencyInputCard } from './components/CurrencyInputCard';
 import { TotalResultCard } from './components/TotalResultCard';
@@ -8,10 +7,11 @@ import { CloseIcon } from './components/icons/CloseIcon';
 import type { CalculationInput, CalculationResult, CalculationMode } from './types';
 import { CURRENCIES } from './constants';
 import { getExchangeRates } from './services/exchangeRateService';
-import { calculatePayPalConversion, calculateReversePayPalConversion } from './utils/calculator';
+import { calculatePayPalConversion, calculateReversePayPalConversion, parseMoney } from './utils/calculator';
 
 const App: React.FC = () => {
-    const createDefaultInput = () => ({ id: Date.now(), amount: '1000', currency: 'USD' });
+    // Initial value formatted as pt-BR
+    const createDefaultInput = () => ({ id: Date.now(), amount: '1.000,00', currency: 'USD' });
 
     const [inputs, setInputs] = useState<CalculationInput[]>([createDefaultInput()]);
     const [results, setResults] = useState<Record<number, CalculationResult | null>>({});
@@ -78,7 +78,10 @@ const App: React.FC = () => {
                     newResults[input.id] = null;
                     continue;
                 }
-                const amount = parseFloat(input.amount);
+                
+                // Parse the masked money string "1.000,00" -> 1000.00
+                const amount = parseMoney(input.amount);
+                
                 if (isNaN(amount) || amount <= 0) {
                     newResults[input.id] = null;
                     continue;
@@ -117,7 +120,7 @@ const App: React.FC = () => {
           newCurrency = 'GBP';
         }
 
-        const newCard: CalculationInput = { id: newId, amount: '1000', currency: newCurrency };
+        const newCard: CalculationInput = { id: newId, amount: '1.000,00', currency: newCurrency };
         setInputs(prevInputs => [...prevInputs, newCard]);
     };
 
@@ -166,7 +169,7 @@ const App: React.FC = () => {
                     </div>
                     
                     {/* Controls Row */}
-                    <div className="flex flex-row items-center gap-2 sm:gap-3 overflow-visible pb-1 md:pb-0 w-full md:w-auto md:justify-end flex-nowrap">
+                    <div className="flex flex-row items-center gap-2 overflow-visible pb-1 md:pb-0 w-full md:w-auto md:justify-end flex-nowrap">
                          
                          {/* Calculation Mode Toggle */}
                          <div className="flex bg-slate-900/80 p-1 rounded-lg border border-slate-700/50 shrink-0">
@@ -260,6 +263,16 @@ const App: React.FC = () => {
                                                         <strong>Micro:</strong> Peça ao suporte para ativar se você vende itens muito baratos (abaixo de $5).
                                                     </p>
                                                 </div>
+                                                
+                                                <a 
+                                                    href="https://www.paypal.com/br/webapps/mpp/merchant-fees" 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 text-xs border-t border-slate-800 pt-3"
+                                                >
+                                                    <span>Ver tabela oficial de tarifas (PDF)</span>
+                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                                </a>
                                              </div>
                                          </div>
                                      </>
@@ -348,7 +361,7 @@ const App: React.FC = () => {
                          
                         <div className="flex justify-between items-center text-[10px] text-slate-600 px-2 font-mono">
                             <span>* Taxas baseadas no PDF Jul/2025.</span>
-                            <span>v2.0.0</span>
+                            <span>v2.1.0</span>
                         </div>
                     </div>
                 </main>

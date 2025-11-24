@@ -1,6 +1,15 @@
-
 import { PAYPAL_FEES, DEFAULT_FEES } from '../constants';
 import type { CalculationResult } from '../types';
+
+export function parseMoney(value: string): number {
+    if (!value) return 0;
+    // Remove all non-numeric characters (points, commas, symbols)
+    // "1.000,00" -> "100000" -> 1000.00
+    const digits = value.replace(/\D/g, '');
+    const number = parseInt(digits, 10);
+    if (isNaN(number)) return 0;
+    return number / 100;
+}
 
 export function calculatePayPalConversion(
     value: number,

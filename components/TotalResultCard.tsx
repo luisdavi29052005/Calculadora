@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
 import type { CalculationInput, CalculationResult, CalculationMode } from '../types';
 import { PAYPAL_FEES, DEFAULT_FEES } from '../constants';
+import { parseMoney } from '../utils/calculator';
 
 const DonutChart: React.FC<{ percentage: number, color: string, size?: number }> = ({ percentage, color, size = 40 }) => {
     const radius = size / 2 - 4;
@@ -73,14 +73,16 @@ export const TotalResultCard: React.FC<TotalResultCardProps> = ({
         const input = inputs.find(i => i.id === id);
         if (!result || !input) return null;
 
-        const originalAmountFormatted = parseFloat(input.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const feeOriginal = result.paypalFeeForeign.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const fees = PAYPAL_FEES[input.currency] || DEFAULT_FEES;
         const percentUsed = isMicropayment ? fees.micropayment_percent : fees.fee_percent;
+        const feeOriginal = result.paypalFeeForeign.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+        // Parse input amount correctly using the BRL mask parser
+        const parsedInputAmount = parseMoney(input.amount);
+        
         // In reverse mode, the input amount is the Target Net, but the calculation base was Gross.
         // We should show the GROSS amount as the main item in reverse mode (The Invoice Amount).
-        const displayAmount = mode === 'REVERSE' ? result.grossBRL / result.exchangeRate : parseFloat(input.amount);
+        const displayAmount = mode === 'REVERSE' ? result.grossBRL / result.exchangeRate : parsedInputAmount;
         const displayCurrency = input.currency;
 
         return (
